@@ -532,21 +532,21 @@ export const BadgeManagementPanel: React.FC = () => {
                 rel="noopener noreferrer"
                 className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors flex items-center space-x-1"
               >
-                <FileText className="w-4 h-4" />
-                <span>View Document</span>
-              </a>
-            )}
-                  
-                  <button
-                    onClick={() => handleDeleteBadge(badge.id)}
-                    className="px-3 py-1.5 bg-gray-500/20 text-gray-400 rounded-lg hover:bg-gray-500/30 transition-colors flex items-center space-x-1"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete</span>
-                  </button>
-                </div>
-              </div>
+   <FileText className="w-4 h-4" />
+                  <span>View Document</span>
+                </a>
+              )}
+
+              <button
+                onClick={() => handleDeleteBadge(badge.id)}
+                className="px-3 py-1.5 bg-gray-500/20 text-gray-400 rounded-lg hover:bg-gray-500/30 transition-colors flex items-center space-x-1"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
             </div>
-        ))}
+          </div>
         </div>
-      )}
+      ))}
+    </div>
+  )}
