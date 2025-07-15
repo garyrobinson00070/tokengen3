@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Clock, DollarSign, Users, Shield } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Clock, DollarSign, Users, Shield, Zap } from 'lucide-react';
 import { PresaleConfig, PresaleDeploymentResult } from '../../types/presale';
 import { ESRBalanceCheck } from '../ESRBalanceCheck';
 import { NetworkMismatchModal } from '../NetworkMismatchModal';
@@ -175,7 +175,7 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <h3 className="text-xl font-semibold text-white mb-4">Sale Overview</h3>
             
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Sale Name</label>
                 <div className="text-white font-medium">{config.saleConfiguration.saleName}</div>
@@ -183,6 +183,12 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Sale Type</label>
                 <div className="text-white font-medium">{getSaleTypeDisplay()}</div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Anti-Bot Protection</label>
+                <div className="text-white font-medium">
+                  {config.antiBotConfig?.enabled ? 'Enabled' : 'Disabled'}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Token</label>
@@ -204,6 +210,45 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
               </div>
             </div>
           </div>
+
+          {/* Anti-Bot Configuration */}
+          {config.antiBotConfig?.enabled && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+              <h3 className="text-xl font-semibold text-white mb-4">Anti-Bot Protection</h3>
+              
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Protection Delay</label>
+                  <div className="text-white font-medium">
+                    {config.antiBotConfig.protectionDelay} seconds
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Max Gas Price</label>
+                  <div className="text-white font-medium">
+                    {config.antiBotConfig.maxGasPrice > 0 
+                      ? `${config.antiBotConfig.maxGasPrice} Gwei` 
+                      : 'No limit'}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Wallet Cooldown</label>
+                  <div className="text-white font-medium">
+                    {config.antiBotConfig.walletCooldown} seconds
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-500/20 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-4 h-4 text-blue-400" />
+                  <span className="text-blue-400 font-medium">
+                    Anti-bot protection helps prevent front-running and sniping
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Sale Configuration */}
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
@@ -240,7 +285,16 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
               </div>
             </div>
 
-            {config.saleType === 'private' && (
+            {config.saleType === 'fairlaunch' ? (
+              <div className="mt-4 p-3 bg-green-500/20 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-4 h-4 text-green-400" />
+                  <span className="text-green-400 font-medium">
+                    Fairlaunch Mode: No hard cap, tokens distributed proportionally
+                  </span>
+                </div>
+              </div>
+            ) : config.saleType === 'private' && (
               <div className="mt-4 p-3 bg-purple-500/20 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Shield className="w-4 h-4 text-purple-400" />

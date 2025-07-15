@@ -16,6 +16,7 @@ import { contractService } from '../services/contractService';
 
 // Add token metadata service import
 import { tokenMetadataService } from '../services/tokenMetadataService';
+import { BadgeDisplay, BadgeInfo } from './badges/BadgeDisplay';
 
 interface PublicSale {
   id: string;
@@ -43,8 +44,9 @@ export const SaleExplorer: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'presale' | 'private'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'raised' | 'participants'>('date');
 
-  // State for token metadata
+  // State for token metadata and badges
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, any>>({});
+  const [tokenBadges, setTokenBadges] = useState<Record<string, BadgeInfo[]>>({});
 
   useEffect(() => {
     // Load sales data from contractService
@@ -78,6 +80,9 @@ export const SaleExplorer: React.FC = () => {
         
         // Fetch token metadata for each sale
         fetchTokenMetadata(mappedSales);
+        
+        // Fetch badges for each sale
+        fetchTokenBadges(mappedSales);
         
         setFilteredSales(mappedSales);
       } catch (error) {
@@ -117,6 +122,39 @@ export const SaleExplorer: React.FC = () => {
       setTokenMetadata(metadataMap);
     } catch (error) {
       console.error('Error fetching token metadata:', error);
+    }
+  };
+
+  const fetchTokenBadges = async (sales: PublicSale[]) => {
+    try {
+      // Create a unique list of token addresses
+      const tokenAddresses = [...new Set(sales.map(sale => sale.contractAddress))];
+      
+      // Fetch badges for each token
+      const badgesPromises = tokenAddresses.map(async (address) => {
+        try {
+          const response = await fetch(`/api/badges/token/${address}`);
+          if (!response.ok) return { address, badges: [] };
+          
+          const badges = await response.json();
+          return { address, badges };
+        } catch (error) {
+          console.error(`Error fetching badges for ${address}:`, error);
+          return { address, badges: [] };
+        }
+      });
+      
+      const badgesResults = await Promise.all(badgesPromises);
+      
+      // Create a map of token address to badges
+      const badgesMap = badgesResults.reduce((map, { address, badges }) => {
+        map[address] = badges;
+        return map;
+      }, {} as Record<string, BadgeInfo[]>);
+      
+      setTokenBadges(badgesMap);
+    } catch (error) {
+      console.error('Error fetching token badges:', error);
     }
   };
 
@@ -219,6 +257,7 @@ export const SaleExplorer: React.FC = () => {
                 <option value="all">All Types</option>
                 <option value="presale">Presale</option>
                 <option value="private">Private Sale</option>
+                <option value="fairlaunch">Fairlaunch</option>
               </select>
             </div>
             
@@ -245,12 +284,22 @@ export const SaleExplorer: React.FC = () => {
                   <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                     {sale.saleType === 'private' ? (
                       <Lock className="w-5 h-5 text-white" />
+                    ) : sale.saleType === 'fairlaunch' ? (
+                      <Zap className="w-5 h-5 text-white" />
                     ) : (
                       <Globe className="w-5 h-5 text-white" />
                     )}
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">{sale.tokenName}</h3>
+                    
+                    {/* Badges */}
+                    {tokenBadges[sale.contractAddress]?.length > 0 && (
+                      <div className="mt-1">
+                        <BadgeDisplay badges={tokenBadges[sale.contractAddress]} size="sm" />
+                      </div>
+                    )}
+                    
                     <p className="text-sm text-gray-300">({sale.tokenSymbol})</p>
                   </div>
                 </div>

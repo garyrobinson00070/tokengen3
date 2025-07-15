@@ -1,6 +1,6 @@
 export interface PresaleConfig {
   id?: string;
-  saleType: 'presale' | 'private';
+  saleType: 'presale' | 'private' | 'fairlaunch';
   tokenInfo: {
     tokenAddress: string;
     tokenName: string;
@@ -18,6 +18,13 @@ export interface PresaleConfig {
     startDate: string;
     endDate: string;
     whitelistEnabled: boolean;
+  };
+  antiBotConfig?: {
+    enabled: boolean;
+    protectionDelay: number; // seconds
+    maxGasPrice: number; // Gwei
+    walletCooldown: number; // seconds
+    signatureRequired: boolean;
   };
   vestingConfig: {
     enabled: boolean;
@@ -64,3 +71,13 @@ export interface SaleParticipant {
 }
 
 export type PresaleStep = 'type' | 'token' | 'config' | 'vesting' | 'autoListing' | 'wallet' | 'review' | 'success';
+
+export interface BadgeInfo {
+  id: string;
+  badge_type: 'kyc' | 'audit' | 'safu';
+  status: 'approved' | 'pending' | 'revoked';
+  document_url?: string;
+  notes?: string;
+  approved_by?: string;
+  approved_at?: string;
+}

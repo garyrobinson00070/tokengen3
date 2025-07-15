@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Users, Lock, Globe, Shield } from 'lucide-react';
+import { ArrowRight, Users, Lock, Globe, Shield, Zap } from 'lucide-react';
 import { PresaleConfig } from '../../types/presale';
 import { useNetworkMode } from '../../hooks/useNetworkMode';
 
@@ -13,7 +13,7 @@ export const SaleTypeStep: React.FC<SaleTypeStepProps> = ({ config, onNext, onBa
   const { isTestnetMode } = useNetworkMode();
   
   const handleNext = () => {
-    onNext({});
+    onNext({ saleType: config.saleType });
   };
 
   const saleTypes = [
@@ -46,6 +46,21 @@ export const SaleTypeStep: React.FC<SaleTypeStepProps> = ({ config, onNext, onBa
         'KYC integration ready'
       ],
       color: 'from-purple-500 to-pink-600'
+    },
+    {
+      id: 'fairlaunch' as const,
+      title: 'Fairlaunch',
+      subtitle: 'Unlimited Participation',
+      description: 'No hard cap, tokens distributed proportionally to contributions',
+      icon: Zap,
+      features: [
+        'No hard cap limit',
+        'Proportional distribution',
+        'Equal opportunity',
+        'Automatic token allocation',
+        'Anti-whale protection'
+      ],
+      color: 'from-green-500 to-blue-600'
     }
   ];
 
@@ -116,14 +131,17 @@ export const SaleTypeStep: React.FC<SaleTypeStepProps> = ({ config, onNext, onBa
                 <td className="py-3 text-gray-300">Public Access</td>
                 <td className="text-center py-3 text-green-400">✓</td>
                 <td className="text-center py-3 text-red-400">✗</td>
+                <td className="text-center py-3 text-green-400">✓</td>
               </tr>
               <tr className="border-b border-white/10">
                 <td className="py-3 text-gray-300">Whitelist Required</td>
                 <td className="text-center py-3 text-red-400">✗</td>
                 <td className="text-center py-3 text-green-400">✓</td>
+                <td className="text-center py-3 text-red-400">✗</td>
               </tr>
               <tr className="border-b border-white/10">
                 <td className="py-3 text-gray-300">Automatic Refunds</td>
+                <td className="text-center py-3 text-green-400">✓</td>
                 <td className="text-center py-3 text-green-400">✓</td>
                 <td className="text-center py-3 text-green-400">✓</td>
               </tr>
@@ -131,9 +149,23 @@ export const SaleTypeStep: React.FC<SaleTypeStepProps> = ({ config, onNext, onBa
                 <td className="py-3 text-gray-300">Vesting Support</td>
                 <td className="text-center py-3 text-green-400">✓</td>
                 <td className="text-center py-3 text-green-400">✓</td>
+                <td className="text-center py-3 text-green-400">✓</td>
+              </tr>
+              <tr className="border-b border-white/10">
+                <td className="py-3 text-gray-300">Hard Cap</td>
+                <td className="text-center py-3 text-green-400">✓</td>
+                <td className="text-center py-3 text-green-400">✓</td>
+                <td className="text-center py-3 text-red-400">✗</td>
+              </tr>
+              <tr className="border-b border-white/10">
+                <td className="py-3 text-gray-300">Anti-Bot Protection</td>
+                <td className="text-center py-3 text-green-400">✓</td>
+                <td className="text-center py-3 text-green-400">✓</td>
+                <td className="text-center py-3 text-green-400">✓</td>
               </tr>
               <tr>
                 <td className="py-3 text-gray-300">ESR Cost</td>
+                <td className="text-center py-3 text-white">{isTestnetMode ? 'Free (Testnet)' : '100 ESR + Gas'}</td>
                 <td className="text-center py-3 text-white">{isTestnetMode ? 'Free (Testnet)' : '100 ESR + Gas'}</td>
                 <td className="text-center py-3 text-white">{isTestnetMode ? 'Free (Testnet)' : '100 ESR + Gas'}</td>
               </tr>

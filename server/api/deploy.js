@@ -208,7 +208,7 @@ function getChainId(network) {
 // Deploy presale contract
 router.post('/presale', authenticate, validatePresaleConfig, async (req, res) => {
   try {
-    const { presaleConfig, network, verify = true } = req.body;
+    const { presaleConfig, network, verify = true, useAntiBotProtection = false } = req.body;
     const userId = req.user.id;
     
     console.log(`Deploying presale for user ${userId} on ${network}`);
@@ -253,8 +253,10 @@ router.post('/presale', authenticate, validatePresaleConfig, async (req, res) =>
       DEPLOYER_ADDRESS: userId
     };
     
-    // Run Hardhat deployment script
-    const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'deploy-presale.js');
+    // Run Hardhat deployment script - choose between standard and anti-bot presale
+    const scriptPath = path.join(__dirname, '..', '..', 'scripts', 
+      useAntiBotProtection || presaleConfig.antiBotConfig?.enabled ? 'deploy-antibot-presale.js' : 'deploy-presale.js');
+    
     const command = `npx hardhat run ${scriptPath} --network ${hardhatNetwork}`;
     
     console.log(`Executing: ${command}`);
@@ -342,6 +344,146 @@ router.post('/presale', authenticate, validatePresaleConfig, async (req, res) =>
     
   } catch (error) {
     console.error('Presale deployment error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Deploy governance contract
+router.post('/governance', authenticate, async (req, res) => {
+  try {
+    const { tokenAddress, network, verify = true } = req.body;
+    const userId = req.user.id;
+    
+    if (!tokenAddress) {
+      return res.status(400).json({ error: 'Token address is required' });
+    }
+    
+    console.log(`Deploying governance for token ${tokenAddress} by user ${userId} on ${network}`);
+    
+    // Map network name to Hardhat network
+    const hardhatNetwork = NETWORK_MAPPING[network];
+    if (!hardhatNetwork) {
+      return res.status(400).json({ error: `Unsupported network: ${network}` });
+    }
+    
+    // Check if user has enough ESR tokens for mainnet deployment
+    if (!network.includes('testnet') && !network.includes('goerli') && !network.includes('sepolia')) {
+      try {
+        const userResult = await query(
+          'SELECT esr_balance FROM users WHERE address = $1',
+          [userId]
+        );
+        
+        if (userResult.rows.length === 0) {
+          return res.status(400).json({ error: 'User not found' });
+        }
+        
+        const esrBalance = parseFloat(userResult.rows[0].esr_balance || '0');
+        const requiredBalance = 100; // 100 ESR tokens required
+        
+        if (esrBalance < requiredBalance) {
+          return res.status(400).json({ 
+            error: `Insufficient ESR tokens. Required: ${requiredBalance}, Available: ${esrBalance.toFixed(2)}` 
+          });
+        }
+      } catch (balanceError) {
+        console.error('Error checking ESR balance:', balanceError);
+        // Continue with deployment even if balance check fails
+      }
+    }
+    
+    // Set environment variables for the deployment script
+    const env = {
+      ...process.env,
+      TOKEN_ADDRESS: tokenAddress,
+      VERIFY: verify ? "true" : "false",
+      DEPLOYER_ADDRESS: userId
+    };
+    
+    // Run Hardhat deployment script
+    const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'deploy-governance.js');
+    const command = `npx hardhat run ${scriptPath} --network ${hardhatNetwork}`;
+    
+    console.log(`Executing: ${command}`);
+    
+    exec(command, { env, cwd: path.join(__dirname, '..', '..') }, async (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Governance deployment error: ${error}`);
+        console.error(`stderr: ${stderr}`);
+        return res.status(500).json({ 
+          error: 'Governance deployment failed', 
+          details: error.message,
+          stderr: stderr
+        });
+      }
+      
+      try {
+        // Parse deployment result from stdout
+        const lines = stdout.split('\n');
+        const resultLine = lines.find(line => line.includes('Deployment result:'));
+        
+        if (!resultLine) {
+          throw new Error('No deployment result found in output');
+        }
+        
+        const result = JSON.parse(resultLine.replace('Deployment result:', '').trim());
+        
+        if (!result.success) {
+          return res.status(500).json({ 
+            error: 'Governance deployment failed', 
+            details: result.error 
+          });
+        }
+        
+        // Save deployment to database
+        try {
+          await query(
+            `INSERT INTO governance_contracts 
+            (contract_address, token_address, owner_address, network_id, network_name, 
+             network_chain_id, transaction_hash, verified) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [
+              result.contractAddress.toLowerCase(),
+              tokenAddress.toLowerCase(),
+              userId,
+              network,
+              network,
+              getChainId(network),
+              result.transactionHash,
+              result.verified || false
+            ]
+          );
+        } catch (dbError) {
+          console.error('Error saving governance to database:', dbError);
+          // Continue even if database save fails
+        }
+        
+        // Return deployment details
+        res.json({
+          success: true,
+          contractAddress: result.contractAddress,
+          tokenAddress: result.tokenAddress,
+          transactionHash: result.transactionHash,
+          gasUsed: result.gasUsed,
+          deploymentCost: result.deploymentCost,
+          network: hardhatNetwork,
+          verified: result.verified,
+          governanceUrl: result.governanceUrl,
+          timestamp: new Date().toISOString()
+        });
+        
+      } catch (parseError) {
+        console.error('Error parsing governance deployment result:', parseError);
+        console.error('stdout:', stdout);
+        res.status(500).json({ 
+          error: 'Failed to parse governance deployment result',
+          details: parseError.message
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Governance deployment error:', error);
     res.status(500).json({ error: error.message });
   }
 });

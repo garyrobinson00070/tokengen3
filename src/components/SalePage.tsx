@@ -2,7 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from '../hooks/useWallet';
 import { useSaleContract } from '../hooks/useSaleContract';
-import { Lock, Globe, ArrowLeft, Clock, Users, Target, TrendingUp } from 'lucide-react';
+import { 
+  Lock, 
+  Globe, 
+  ArrowLeft, 
+  Clock, 
+  Users, 
+  Target, 
+  TrendingUp, 
+  Shield, 
+  AlertTriangle, 
+  Zap 
+} from 'lucide-react';
+import { BadgeDisplay } from './badges/BadgeDisplay';
+import { BadgeInfo } from '../types/presale';
 
 interface SalePageProps {
   contractAddress: string;
@@ -13,7 +26,30 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
   const { saleData, userInfo, loading, error, contribute, withdraw, claimTokens } = useSaleContract(contractAddress);
   const [activeTab, setActiveTab] = useState('overview');
   const [contributionAmount, setContributionAmount] = useState('');
+  const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [tokenMetadata, setTokenMetadata] = useState<any>(null);
+  const [isProtectionActive, setIsProtectionActive] = useState(false);
+  const [protectionTimeRemaining, setProtectionTimeRemaining] = useState(0);
+  const [isInCooldown, setIsInCooldown] = useState(false);
+  const [cooldownTimeRemaining, setCooldownTimeRemaining] = useState(0);
+
+  useEffect(() => {
+    if (contractAddress) {
+      loadBadges();
+    }
+  }, [contractAddress]);
+
+  const loadBadges = async () => {
+    try {
+      const response = await fetch(`/api/badges/token/${contractAddress}`);
+      if (response.ok) {
+        const data = await response.json();
+        setBadges(data);
+      }
+    } catch (error) {
+      console.error('Error loading badges:', error);
+    }
+  };
 
   // Calculate sale status
   const getStatus = () => {
@@ -158,6 +194,73 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
                 </div>
               </div>
             </div>
+            
+            {/* Badges */}
+            {badges.length > 0 && (
+              <div className="mt-4">
+                <BadgeDisplay badges={badges} size="md" />
+              </div>
+            )}
+            
+            {/* Anti-Bot Protection */}
+            {isProtectionActive && (
+              <div className="mt-4 p-3 bg-amber-500/20 border border-amber-500/50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-4 h-4 text-amber-400" />
+                  <div>
+                    <span className="text-amber-400 font-medium">Anti-Bot Protection Active</span>
+                    <span className="text-amber-300 text-sm ml-2">
+                      {Math.floor(protectionTimeRemaining / 60)}m {protectionTimeRemaining % 60}s remaining
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Wallet Cooldown */}
+            {isInCooldown && (
+              <div className="mt-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4 text-blue-400" />
+                  <div>
+                    <span className="text-blue-400 font-medium">Wallet Cooldown</span>
+                    <span className="text-blue-300 text-sm ml-2">
+                      {Math.floor(cooldownTimeRemaining / 60)}m {cooldownTimeRemaining % 60}s until next purchase
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Fairlaunch Notice */}
+            {saleData.saleType === 'fairlaunch' && (
+              <div className="mt-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-4 h-4 text-green-400" />
+                  <div>
+                    <span className="text-green-400 font-medium">Fairlaunch Sale</span>
+                    <span className="text-green-300 text-sm ml-2">
+                      No hard cap, tokens distributed proportionally
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Whitelist Only */}
+            {saleData.saleType === 'private' && (
+              <div className="mt-4 p-3 bg-purple-500/20 border border-purple-500/50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Lock className="w-4 h-4 text-purple-400" />
+                  <div>
+                    <span className="text-purple-400 font-medium">Whitelist Only</span>
+                    <span className="text-purple-300 text-sm ml-2">
+                      Only approved wallets can participate
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -257,7 +360,7 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Contribution Amount (ETH)
+                        Contribution Amount ({saleData.networkSymbol})
                       </label>
                       <input
                         type="number"
@@ -269,11 +372,33 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
                     </div>
                     <button
                       onClick={handleContribute}
-                      disabled={!contributionAmount || parseFloat(contributionAmount) <= 0}
+                      disabled={!contributionAmount || parseFloat(contributionAmount) <= 0 || isProtectionActive || isInCooldown}
                       className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       Contribute
                     </button>
+                    
+                    {isProtectionActive && (
+                      <div className="p-3 bg-amber-500/20 border border-amber-500/50 rounded-lg mt-2">
+                        <div className="flex items-start space-x-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5" />
+                          <p className="text-amber-300 text-sm">
+                            Anti-bot protection is active. Only whitelisted addresses can participate during this period.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {isInCooldown && (
+                      <div className="p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg mt-2">
+                        <div className="flex items-start space-x-2">
+                          <Clock className="w-4 h-4 text-blue-400 mt-0.5" />
+                          <p className="text-blue-300 text-sm">
+                            Wallet cooldown active. Please wait {Math.floor(cooldownTimeRemaining / 60)}m {cooldownTimeRemaining % 60}s before your next purchase.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -304,10 +429,23 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
                   <span className="text-gray-400">Token Price</span>
                   <span className="text-white">{ethers.formatEther(saleData.tokenPrice)} ETH</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Total Supply</span>
-                  <span className="text-white">{ethers.formatUnits(saleData.totalSupply, 18)}</span>
-                </div>
+                {saleData.saleType === 'fairlaunch' ? (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Distribution</span>
+                    <span className="text-white">Proportional to contribution</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Soft Cap</span>
+                      <span className="text-white">{ethers.formatEther(saleData.softCap)} {saleData.networkSymbol}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Hard Cap</span>
+                      <span className="text-white">{ethers.formatEther(saleData.hardCap)} {saleData.networkSymbol}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-400">Sale Type</span>
                   <span className="text-white capitalize">{saleData.saleType}</span>
@@ -320,6 +458,12 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
                   <span className="text-gray-400">End Time</span>
                   <span className="text-white">{new Date(saleData.endTime * 1000).toLocaleDateString()}</span>
                 </div>
+                {saleData.antiBotEnabled && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Anti-Bot Protection</span>
+                    <span className="text-green-400">Enabled</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

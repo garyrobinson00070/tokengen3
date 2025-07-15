@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { query } = require('../db');
 const { verifyHash } = require('../utils/encryption');
+const { ethers } = require('ethers');
 
 // Authenticate user with JWT
 function authenticate(req, res, next) {
@@ -137,10 +138,33 @@ async function verifySignature(req, res, next) {
 // Check if user is admin
 async function isAdmin(req, res, next) {
   try {
-    const adminAddresses = (process.env.ADMIN_ADDRESSES || '').split(',').map(a => a.toLowerCase());
+    // First check if user is authenticated
+    if (!req.user || !req.user.address) {
+      return res.status(401).json({ 
+        error: 'Authentication required', 
+        message: 'Please connect your wallet to access this resource',
+        code: 'AUTH_REQUIRED'
+      });
+    }
     
-    if (!req.user || !adminAddresses.includes(req.user.address.toLowerCase())) {
-      return res.status(403).json({ error: 'Access denied' });
+    // Check if user is in admin_users table
+    const adminResult = await query(
+      'SELECT * FROM admin_users WHERE address = $1',
+      [req.user.address.toLowerCase()]
+    );
+    
+    // If not in admin_users table, check environment variable
+    if (adminResult.rows.length === 0) {
+      const adminAddresses = (process.env.ADMIN_ADDRESSES || '').split(',').map(a => a.toLowerCase());
+      
+      if (!adminAddresses.includes(req.user.address.toLowerCase())) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+    
+    // Set admin role in request
+    if (adminResult.rows.length > 0) {
+      req.user.role = adminResult.rows[0].role;
     }
     
     next();
@@ -150,8 +174,38 @@ async function isAdmin(req, res, next) {
   }
 }
 
+// Check if user is super admin
+async function isSuperAdmin(req, res, next) {
+  try {
+    // First check if user is authenticated
+    if (!req.user || !req.user.address) {
+      return res.status(401).json({ 
+        error: 'Authentication required', 
+        message: 'Please connect your wallet to access this resource',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+    
+    // Check if user is in admin_users table with super_admin role
+    const adminResult = await query(
+      'SELECT * FROM admin_users WHERE address = $1 AND role = $2',
+      [req.user.address.toLowerCase(), 'super_admin']
+    );
+    
+    if (adminResult.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied. Super admin privileges required.' });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Super admin check error:', error);
+    res.status(500).json({ error: 'Authorization failed' });
+  }
+}
+
 module.exports = { 
   authenticate, 
   verifySignature,
-  isAdmin
+  isAdmin,
+  isSuperAdmin
 };

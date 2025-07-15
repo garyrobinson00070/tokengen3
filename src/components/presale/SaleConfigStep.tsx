@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Calendar, Clock, DollarSign, Users, AlertCircle, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, Clock, DollarSign, Users, AlertTriangle, Info, Zap, Shield } from 'lucide-react';
 import { PresaleConfig } from '../../types/presale';
 
 interface SaleConfigStepProps {
@@ -12,8 +12,21 @@ export const SaleConfigStep: React.FC<SaleConfigStepProps> = ({ config, onNext, 
   const [saleConfig, setSaleConfig] = useState(config.saleConfiguration);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Anti-bot protection settings
+  const [antiBotConfig, setAntiBotConfig] = useState({
+    enabled: true,
+    protectionDelay: 300, // 5 minutes in seconds
+    maxGasPrice: 50, // 50 Gwei
+    walletCooldown: 60, // 1 minute in seconds
+    signatureRequired: false
+  });
+
   const updateConfig = (updates: Partial<typeof saleConfig>) => {
     setSaleConfig(prev => ({ ...prev, ...updates }));
+  };
+
+  const updateAntiBotConfig = (updates: Partial<typeof antiBotConfig>) => {
+    setAntiBotConfig(prev => ({ ...prev, ...updates }));
   };
 
   const getTomorrowDate = () => {
@@ -88,7 +101,11 @@ export const SaleConfigStep: React.FC<SaleConfigStepProps> = ({ config, onNext, 
 
   const handleNext = () => {
     if (validateForm()) {
-      onNext({ saleConfiguration: saleConfig });
+      // Include anti-bot configuration in the next step
+      onNext({ 
+        saleConfiguration: saleConfig,
+        antiBotConfig: antiBotConfig.enabled ? antiBotConfig : null
+      });
     }
   };
 
@@ -303,6 +320,81 @@ export const SaleConfigStep: React.FC<SaleConfigStepProps> = ({ config, onNext, 
         </div>
       )}
 
+      {/* Anti-Bot Protection */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id="antiBotEnabled"
+              checked={antiBotConfig.enabled}
+              onChange={(e) => updateAntiBotConfig({ enabled: e.target.checked })}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="antiBotEnabled" className="text-lg font-semibold text-white">
+              Enable Anti-Bot Protection
+            </label>
+          </div>
+          <Shield className="w-5 h-5 text-blue-400" />
+        </div>
+        
+        <p className="text-gray-300 text-sm mb-4">
+          Anti-bot protection helps prevent front-running bots and automated sniping during the sale.
+        </p>
+        
+        {antiBotConfig.enabled && (
+          <div className="grid md:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Protection Delay (seconds)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={antiBotConfig.protectionDelay}
+                onChange={(e) => updateAntiBotConfig({ protectionDelay: parseInt(e.target.value) || 0 })}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-gray-400 text-xs mt-1">
+                Time after start when only whitelist can buy
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Max Gas Price (Gwei)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={antiBotConfig.maxGasPrice}
+                onChange={(e) => updateAntiBotConfig({ maxGasPrice: parseInt(e.target.value) || 0 })}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-gray-400 text-xs mt-1">
+                0 = no limit, otherwise max gas price in Gwei
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Wallet Cooldown (seconds)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={antiBotConfig.walletCooldown}
+                onChange={(e) => updateAntiBotConfig({ walletCooldown: parseInt(e.target.value) || 0 })}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-gray-400 text-xs mt-1">
+                Time between purchases from same wallet
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Summary */}
       <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
         <h3 className="text-lg font-semibold text-white mb-4">Configuration Summary</h3>
@@ -344,6 +436,12 @@ export const SaleConfigStep: React.FC<SaleConfigStepProps> = ({ config, onNext, 
               <span className="text-gray-300">Whitelist:</span>
               <span className={`font-medium ${saleConfig.whitelistEnabled ? 'text-green-400' : 'text-gray-400'}`}>
                 {saleConfig.whitelistEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-300">Anti-Bot Protection:</span>
+              <span className={`font-medium ${antiBotConfig.enabled ? 'text-green-400' : 'text-gray-400'}`}>
+                {antiBotConfig.enabled ? 'Enabled' : 'Disabled'}
               </span>
             </div>
           </div>

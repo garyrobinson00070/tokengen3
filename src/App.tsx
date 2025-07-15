@@ -13,6 +13,9 @@ import { TokenManagement } from './components/TokenManagement';
 import { LiquidityLock } from './components/LiquidityLock';
 import { Airdrop } from './components/Airdrop';
 import { NotFound } from './components/NotFound';
+import { BadgeManagementPanel } from './components/admin/BadgeManagementPanel';
+import { GovernanceDashboard } from './components/governance/GovernanceDashboard';
+import { ProposalDetail } from './components/governance/ProposalDetail';
 import { TokenConfig, DeploymentResult, Step } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useNetworkMode } from './hooks/useNetworkMode';
@@ -34,7 +37,7 @@ declare global {
 function App() {
   const { isTestnetMode } = useNetworkMode();
   const { isConnected, chainId, switchToNetwork } = useWallet();
-  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore' | 'manage' | 'liquidity-lock' | 'airdrop'>('landing');
+  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore' | 'manage' | 'liquidity-lock' | 'airdrop' | 'admin' | 'governance' | 'proposal'>('landing');
   const [tokenConfig, setTokenConfig] = useState<TokenConfig | null>(null);
   const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
 
@@ -83,6 +86,10 @@ function App() {
   
   const handleAirdrop = () => {
     setCurrentStep('airdrop');
+  };
+  
+  const handleAdminPanel = () => {
+    setCurrentStep('admin');
   };
 
   const handleTokenConfigComplete = (config: TokenConfig) => {
@@ -134,6 +141,8 @@ function App() {
           onExploreSales={handleExploreSales} 
           onLiquidityLock={handleLiquidityLock}
           onAirdrop={handleAirdrop}
+          onAdminPanel={handleAdminPanel}
+          onAdminPanel={handleAdminPanel}
         />
         <NetworkModeIndicator />
         </>
@@ -252,6 +261,30 @@ function App() {
         </>
       );
     
+    case 'admin':
+      return (
+        <>
+          <BadgeManagementPanel />
+          <NetworkModeIndicator />
+        </>
+      );
+    
+    case 'governance':
+      return (
+        <>
+          <GovernanceDashboard />
+          <NetworkModeIndicator />
+        </>
+      );
+    
+    case 'proposal':
+      return (
+        <>
+          <ProposalDetail />
+          <NetworkModeIndicator />
+        </>
+      );
+    
     case '404':
       return (
         <>
@@ -262,7 +295,7 @@ function App() {
     
     default:
       // Check if this is a valid route
-      const validRoutes = ['landing', 'builder', 'vesting', 'review', 'success', 'presale', 'sales', 'tokens', 'sale', 'explore', 'manage', 'liquidity-lock', 'airdrop'];
+      const validRoutes = ['landing', 'builder', 'vesting', 'review', 'success', 'presale', 'sales', 'tokens', 'sale', 'explore', 'manage', 'liquidity-lock', 'airdrop', 'admin', 'governance', 'proposal'];
       if (!validRoutes.includes(currentStep)) {
         return (
           <>
@@ -281,6 +314,7 @@ function App() {
             onExploreSales={handleExploreSales}
             onLiquidityLock={handleLiquidityLock}
             onAirdrop={handleAirdrop}
+            onAdminPanel={handleAdminPanel}
           />
           <NetworkModeIndicator />
           </>

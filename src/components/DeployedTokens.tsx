@@ -14,7 +14,8 @@ import {
   Link,
   Twitter,
   MessageCircle,
-  Settings
+  Settings,
+  VoteIcon
 } from 'lucide-react';
 import { Network } from '../types';
 import { networks } from '../data/networks';
@@ -22,6 +23,7 @@ import { contractService } from '../services/contractService';
 import { web3Service } from '../services/web3Service';
 import { tokenMetadataService } from '../services/tokenMetadataService';
 import { TokenMetadataCard } from './TokenMetadataCard';
+import { BadgeDisplay, BadgeInfo } from './badges/BadgeDisplay';
 
 interface DeployedToken {
   id: string;
@@ -44,11 +46,14 @@ export const DeployedTokens: React.FC = () => {
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'supply'>('date');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'verified'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'verified' | 'badges'>('all');
   const [copied, setCopied] = useState<string | null>(null);
 
   // State for token metadata
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, any>>({});
+  
+  // State for token badges
+  const [tokenBadges, setTokenBadges] = useState<Record<string, BadgeInfo[]>>({});
 
   // State for deployed tokens
   const [deployedTokens, setDeployedTokens] = useState<DeployedToken[]>([]);
@@ -84,6 +89,9 @@ export const DeployedTokens: React.FC = () => {
         
         // Fetch token metadata for each token
         fetchTokenMetadata(mappedTokens);
+        
+        // Fetch badges for each token
+        fetchTokenBadges(mappedTokens);
         
         // Fetch real statistics for each token
         await fetchTokenStatistics(mappedTokens);
@@ -124,6 +132,39 @@ export const DeployedTokens: React.FC = () => {
       setTokenMetadata(metadataMap);
     } catch (error) {
       console.error('Error fetching token metadata:', error);
+    }
+  };
+
+  const fetchTokenBadges = async (tokens: DeployedToken[]) => {
+    try {
+      // Create a unique list of token addresses
+      const tokenAddresses = [...new Set(tokens.map(token => token.contractAddress))];
+      
+      // Fetch badges for each token
+      const badgesPromises = tokenAddresses.map(async (address) => {
+        try {
+          const response = await fetch(`/api/badges/token/${address}`);
+          if (!response.ok) return { address, badges: [] };
+          
+          const badges = await response.json();
+          return { address, badges };
+        } catch (error) {
+          console.error(`Error fetching badges for ${address}:`, error);
+          return { address, badges: [] };
+        }
+      });
+      
+      const badgesResults = await Promise.all(badgesPromises);
+      
+      // Create a map of token address to badges
+      const badgesMap = badgesResults.reduce((map, { address, badges }) => {
+        map[address] = badges;
+        return map;
+      }, {} as Record<string, BadgeInfo[]>);
+      
+      setTokenBadges(badgesMap);
+    } catch (error) {
+      console.error('Error fetching token badges:', error);
     }
   };
 
@@ -192,7 +233,10 @@ export const DeployedTokens: React.FC = () => {
     const matchesSearch = token.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          token.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          token.contractAddress.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || token.status === filterStatus;
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'badges' ? 
+                           (tokenBadges[token.contractAddress]?.length > 0) : 
+                           token.status === filterStatus);
     
     return matchesNetwork && matchesSearch && matchesStatus;
   });
@@ -371,6 +415,7 @@ export const DeployedTokens: React.FC = () => {
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="verified">Verified</option>
+                <option value="badges">With Badges</option>
               </select>
             </div>
             
@@ -480,6 +525,13 @@ export const DeployedTokens: React.FC = () => {
                         </div>
                       )}
                       
+                      {/* Badges */}
+                      {tokenBadges[token.contractAddress]?.length > 0 && (
+                        <div className="mt-2">
+                          <BadgeDisplay badges={tokenBadges[token.contractAddress]} size="sm" />
+                        </div>
+                      )}
+                      
                       <div className="flex items-center space-x-2 mb-4">
                         <span className="text-sm text-gray-300">Contract:</span>
                         <code className="text-sm text-white font-mono bg-white/10 px-2 py-1 rounded">
@@ -562,6 +614,13 @@ export const DeployedTokens: React.FC = () => {
                       title="Manage Token"
                     >
                       <Settings className="w-4 h-4" />
+                    </a>
+                    <a
+                      href={`/governance/${token.contractAddress}`}
+                      className="p-2 text-gray-400 hover:text-white transition-colors"
+                      title="Governance"
+                    >
+                      <VoteIcon className="w-4 h-4" />
                     </a>
                     <button className="p-2 text-gray-400 hover:text-white transition-colors">
                       <MoreVertical className="w-4 h-4" />

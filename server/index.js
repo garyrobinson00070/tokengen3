@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
+const cron = require('node-cron');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
@@ -9,6 +10,8 @@ const deployRoutes = require('./api/deploy');
 const authRoutes = require('./api/auth');
 const contractRoutes = require('./api/contracts');
 const tokenMetadataRoutes = require('./api/token-metadata');
+const badgeRoutes = require('./api/badges');
+const governanceRoutes = require('./api/governance');
 const connectDB = require('./db');
 const applySecurityMiddleware = require('./middleware/security');
 
@@ -41,6 +44,28 @@ app.use('/api/auth', authRoutes);
 app.use('/api/deploy', deployRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/token-metadata', tokenMetadataRoutes);
+app.use('/api/badges', badgeRoutes);
+app.use('/api/governance', governanceRoutes);
+
+// Set up cron job to update governance proposal statuses
+cron.schedule('*/10 * * * *', async () => { // Run every 10 minutes
+  try {
+    console.log('Running cron job to update governance proposal statuses');
+    
+    // Call the API endpoint to update proposal statuses
+    const response = await fetch(`http://localhost:${PORT}/api/governance/update-statuses`, {
+      method: 'PUT'
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to update governance proposal statuses:', response.status, response.statusText);
+    } else {
+      console.log('Successfully updated governance proposal statuses');
+    }
+  } catch (error) {
+    console.error('Error running governance status update cron job:', error);
+  }
+});
 
 // Serve deployment files
 app.use('/deployments', express.static(path.join(__dirname, '..', 'deployments')));

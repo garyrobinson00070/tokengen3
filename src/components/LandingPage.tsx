@@ -3,6 +3,7 @@ import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star, Layers } from 'lucid
 import { WalletConnection } from './WalletConnection';
 import { useWallet } from '../hooks/useWallet';
 import { NetworkModeToggle } from './NetworkModeToggle';
+import { BadgeDisplay } from './badges/BadgeDisplay';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -12,6 +13,7 @@ interface LandingPageProps {
   onExploreSales?: () => void;
   onLiquidityLock?: () => void;
   onAirdrop?: () => void;
+  onAdminPanel?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ 
@@ -21,7 +23,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onViewTokens,
   onExploreSales,
   onLiquidityLock,
-  onAirdrop
+  onAirdrop,
+  onAdminPanel
 }) => {
   const { isConnected } = useWallet();
   
@@ -110,8 +113,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <button
                   onClick={onAirdrop}
                   className="text-gray-300 hover:text-white transition-colors"
+              >
+                Airdrop Tool
+              </button>
+              )}
+              {onAdminPanel && (
+                <button
+                  onClick={onAdminPanel}
+                  className="text-gray-300 hover:text-white transition-colors"
                 >
-                  Airdrop Tool
+                  Admin Panel
                 </button>
               )}
             </nav>
@@ -201,6 +212,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <h3 className="text-3xl font-bold text-white mb-4">
               Everything You Need to Launch
             </h3>
+            
+            {/* Sample badges */}
+            <div className="flex justify-center mb-6">
+              <BadgeDisplay 
+                badges={[
+                  { id: '1', badge_type: 'kyc', status: 'approved' },
+                  { id: '2', badge_type: 'audit', status: 'approved' },
+                  { id: '3', badge_type: 'safu', status: 'approved' }
+                ]}
+                size="lg"
+              />
+            </div>
+            
             <p className="text-gray-300 text-lg max-w-2xl mx-auto">
               Professional token creation tools with enterprise-grade security and multi-chain support
             </p>
@@ -296,10 +320,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   {tokenFeatures.map((feature, index) => (
                     <div key={index} className="flex items-center space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <CheckCircle className="w-4 h-4 text-green-400" />
                       <span className="text-white">{feature}</span>
                     </div>
                   ))}
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span className="text-white">Anti-Bot Protection</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span className="text-white">Governance & Voting</span>
+                  </div>
                   {onLiquidityLock && (
                     <button
                       onClick={onLiquidityLock}
@@ -323,21 +355,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl p-6 border border-blue-500/30">
                   <h4 className="text-white font-semibold mb-2">Vesting & Locking</h4>
                   <p className="text-gray-300 text-sm">
-                    Configure token vesting schedules for team, investors, and ecosystem allocations
+                    Configure token vesting schedules for team, investors, and ecosystem
                   </p>
                 </div>
                 
                 <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl p-6 border border-green-500/30">
                   <h4 className="text-white font-semibold mb-2">Transfer Fees</h4>
-                  <p className="text-gray-300 text-sm">
+                    <code className="font-mono">KYC Verified</code>: Team identity verified
                     Implement automatic fees and redistribution mechanisms
                   </p>
                 </div>
-                
+                    <code className="font-mono">Audit Certified</code>: Smart contract audited
                 <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-6 border border-purple-500/30">
                   <h4 className="text-white font-semibold mb-2">Auto Verification</h4>
                   <p className="text-gray-300 text-sm">
-                    Contracts are automatically verified on blockchain explorers
+                    Contracts verified on blockchain explorers with trust badges
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-xl p-6 border border-green-500/30">
+                  <h4 className="text-white font-semibold mb-2">Anti-Bot Protection</h4>
+                  <p className="text-gray-300 text-sm">
+                    Prevent front-running bots and automated sniping during launches
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-r from-orange-500/20 to-amber-500/20 rounded-xl p-6 border border-orange-500/30">
+                  <h4 className="text-white font-semibold mb-2">Governance Tools</h4>
+                  <p className="text-gray-300 text-sm">
+                    Built-in voting system for token holders to participate in decisions
                   </p>
                 </div>
               </div>
