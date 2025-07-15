@@ -555,19 +555,20 @@ export class Web3Service {
   async deployContract(abi: any, bytecode: string, args: any[]): Promise<{address: string, txHash: string}> {
     if (!this.signer) throw new AppError('Signer not available', ErrorType.WALLET);
     
-    // Ensure all address arguments are properly checksummed
-    const processedArgs = args.map(arg => {
-      if (typeof arg === 'string' && arg.startsWith('0x') && arg.length === 42) {
-        try {
-          return ethers.getAddress(arg);
-        } catch (e) {
-          return arg; // Return original if not a valid address
-        }
-      }
-      return arg;
-    });
-    
     try {
+      // Ensure all address arguments are properly checksummed
+      const processedArgs = args.map(arg => {
+        if (typeof arg === 'string' && arg.startsWith('0x') && arg.length === 42) {
+          try {
+            return ethers.getAddress(arg.toLowerCase());
+          } catch (e) {
+            console.warn('Failed to checksum address:', arg, e);
+            return arg; // Return original if not a valid address
+          }
+        }
+        return arg;
+      });
+    
       // Create contract factory
       const factory = new ethers.ContractFactory(abi, bytecode, this.signer);
       
