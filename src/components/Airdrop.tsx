@@ -48,9 +48,9 @@ export const Airdrop: React.FC = () => {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isTokenApproved, setIsTokenApproved] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-
-  // MultiSender contract address (properly checksummed)
-  const MULTI_SENDER_ADDRESS = ethers.getAddress('0x742d35cc6634c0532925a3b8d4c9db96590c6c8c');
+  
+  // MultiSender contract address
+  const MULTI_SENDER_ADDRESS = '0x742d35cc6634c0532925a3b8d4c9db96590c6c8c';
 
   useEffect(() => {
     if (token && ethers.isAddress(token)) {
@@ -79,11 +79,11 @@ export const Airdrop: React.FC = () => {
       const tokenContract = new ethers.Contract(
         token,
         [
-          'function name() view returns (string)',
-          'function symbol() view returns (string)',
-          'function decimals() view returns (uint8)',
-          'function balanceOf(address) view returns (uint256)',
-          'function allowance(address,address) view returns (uint256)'
+          'function name() external view returns (string)',
+          'function symbol() external view returns (string)',
+          'function decimals() external view returns (uint8)',
+          'function balanceOf(address) external view returns (uint256)',
+          'function allowance(address,address) external view returns (uint256)'
         ],
         provider
       );
@@ -93,7 +93,7 @@ export const Airdrop: React.FC = () => {
         tokenContract.symbol(),
         tokenContract.decimals(),
         tokenContract.balanceOf(address),
-        tokenContract.allowance(address, MULTI_SENDER_ADDRESS)
+        tokenContract.allowance(address, ethers.getAddress(MULTI_SENDER_ADDRESS))
       ]);
       
       setTokenInfo({
@@ -133,7 +133,11 @@ export const Airdrop: React.FC = () => {
       const provider = web3Service.getProvider();
       if (!provider || !token || !tokenInfo) return;
       
-      const multiSenderContract = new ethers.Contract(MULTI_SENDER_ADDRESS, MultiSenderABI, provider);
+      const multiSenderContract = new ethers.Contract(
+        ethers.getAddress(MULTI_SENDER_ADDRESS), 
+        MultiSenderABI, 
+        provider
+      );
       
       // Get gas estimate from contract
       const validRecipients = recipients.filter(r => r.valid);
@@ -285,13 +289,11 @@ export const Airdrop: React.FC = () => {
       // Approve token spending
       const tokenContract = new ethers.Contract(
         token,
-        [
-          'function approve(address spender, uint256 amount) returns (bool)'
-        ],
+        ['function approve(address spender, uint256 amount) returns (bool)'],
         signer
       );
       
-      const approveTx = await tokenContract.approve(MULTI_SENDER_ADDRESS, totalAmountWei);
+      const approveTx = await tokenContract.approve(ethers.getAddress(MULTI_SENDER_ADDRESS), totalAmountWei);
       await approveTx.wait();
       
       setIsTokenApproved(true);
@@ -330,7 +332,11 @@ export const Airdrop: React.FC = () => {
       );
       
       // Send airdrop
-      const multiSenderContract = new ethers.Contract(MULTI_SENDER_ADDRESS, MultiSenderABI, signer);
+      const multiSenderContract = new ethers.Contract(
+        ethers.getAddress(MULTI_SENDER_ADDRESS), 
+        MultiSenderABI, 
+        signer
+      );
       
       const tx = await multiSenderContract.multiSend(
         token,

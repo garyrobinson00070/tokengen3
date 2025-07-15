@@ -38,7 +38,7 @@ export const LiquidityLock: React.FC = () => {
   const [copied, setCopied] = useState<string | null>(null);
 
   // Liquidity Locker contract address
-  const LOCKER_ADDRESS = ethers.getAddress('0x742d35cc6634c0532925a3b8d4c9db96590c6c8c'); // Replace with actual address
+  const LOCKER_ADDRESS = '0x742d35cc6634c0532925a3b8d4c9db96590c6c8c'; // Replace with actual address
 
   useEffect(() => {
     if (isConnected && address) {
@@ -56,7 +56,11 @@ export const LiquidityLock: React.FC = () => {
       const provider = web3Service.getProvider();
       if (!provider) throw new Error('Provider not available');
       
-      const lockerContract = new ethers.Contract(LOCKER_ADDRESS, LiquidityLockerABI, provider);
+      const lockerContract = new ethers.Contract(
+        ethers.getAddress(LOCKER_ADDRESS), 
+        LiquidityLockerABI, 
+        provider
+      );
       
       // Get user's lock IDs with error handling for empty contract response
       let lockIds;
@@ -142,20 +146,27 @@ export const LiquidityLock: React.FC = () => {
       // Check token allowance
       const tokenContract = new ethers.Contract(
         token,
-        ['function allowance(address,address) view returns (uint256)', 'function approve(address,uint256) returns (bool)'],
+        [
+          'function allowance(address,address) view returns (uint256)', 
+          'function approve(address,uint256) returns (bool)'
+        ],
         signer
       );
       
-      const allowance = await tokenContract.allowance(address, LOCKER_ADDRESS);
+      const allowance = await tokenContract.allowance(address, ethers.getAddress(LOCKER_ADDRESS));
       
       // If allowance is insufficient, request approval
       if (allowance < amountWei) {
-        const approveTx = await tokenContract.approve(LOCKER_ADDRESS, amountWei);
+        const approveTx = await tokenContract.approve(ethers.getAddress(LOCKER_ADDRESS), amountWei);
         await approveTx.wait();
       }
       
       // Lock liquidity
-      const lockerContract = new ethers.Contract(LOCKER_ADDRESS, LiquidityLockerABI, signer);
+      const lockerContract = new ethers.Contract(
+        ethers.getAddress(LOCKER_ADDRESS), 
+        LiquidityLockerABI, 
+        signer
+      );
       const lockTx = await lockerContract.lockLiquidity(token, amountWei, durationSeconds);
       
       const receipt = await lockTx.wait();
@@ -199,7 +210,11 @@ export const LiquidityLock: React.FC = () => {
       const signer = web3Service.getSigner();
       if (!signer) throw new Error('Wallet connection issue');
       
-      const lockerContract = new ethers.Contract(LOCKER_ADDRESS, LiquidityLockerABI, signer);
+      const lockerContract = new ethers.Contract(
+        ethers.getAddress(LOCKER_ADDRESS), 
+        LiquidityLockerABI, 
+        signer
+      );
       
       const withdrawTx = await lockerContract.withdraw(lockId);
       await withdrawTx.wait();
@@ -227,7 +242,11 @@ export const LiquidityLock: React.FC = () => {
       const signer = web3Service.getSigner();
       if (!signer) throw new Error('Wallet connection issue');
       
-      const lockerContract = new ethers.Contract(LOCKER_ADDRESS, LiquidityLockerABI, signer);
+      const lockerContract = new ethers.Contract(
+        ethers.getAddress(LOCKER_ADDRESS), 
+        LiquidityLockerABI, 
+        signer
+      );
       
       const additionalSeconds = additionalDays * 24 * 60 * 60;
       const extendTx = await lockerContract.extendLock(lockId, additionalSeconds);
