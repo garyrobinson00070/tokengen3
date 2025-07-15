@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star, Layers } from 'lucide-react';
+import { ArrowRight, Shield, Globe, CheckCircle, Star, Layers } from 'lucide-react';
 import { WalletConnection } from './WalletConnection';
 import { useWallet } from '../hooks/useWallet';
 import { NetworkModeToggle } from './NetworkModeToggle';
@@ -72,9 +72,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <header className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
+            <img 
+              src="/ESTAR_bezfona.png" 
+              alt="ESTAR ECOSYSTEM Logo" 
+              className="w-10 h-10 rounded-lg"
+            />
             <div>
               <h1 className="text-2xl font-bold text-white">ESTAR ECOSYSTEM</h1>
             </div>
