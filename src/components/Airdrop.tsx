@@ -50,7 +50,7 @@ export const Airdrop: React.FC = () => {
   const [isApproving, setIsApproving] = useState(false);
 
   // MultiSender contract address
-  const MULTI_SENDER_ADDRESS = '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'; // Replace with actual address
+  const MULTI_SENDER_ADDRESS = ethers.getAddress('0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'); // Replace with actual address
 
   useEffect(() => {
     if (token && ethers.isAddress(token)) {
