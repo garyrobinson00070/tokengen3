@@ -126,7 +126,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </button>
               )}
             </nav>
-            <NetworkModeToggle />
             <WalletConnection />
           </div>
         </div>
@@ -260,46 +259,107 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {[
-              { name: 'Ethereum', logo: '🔷' },
-              { name: 'BSC', logo: '🟡' },
-              { name: 'Polygon', logo: '🟣' },
-              { name: 'Arbitrum', logo: '🔵' },
-              { name: 'Fantom', logo: '🌟' },
-              { name: 'Avalanche', logo: '🔺' },
-              { name: 'Cronos', logo: '⚡' },
-              { name: 'Core', logo: '🔘' },
-              { name: 'DogeChain', logo: '🐕' },
-              { name: 'PulseChain', logo: '💗' },
-              { name: 'ZetaChain', logo: '🔗' },
-              { name: 'Unichain', logo: '🦄' },
-              { name: 'Bitrock', logo: '🪨' },
-              { name: 'AlveyChain', logo: '🧝' },
-              { name: 'OpenGPU', logo: '🖥️' },
-              { name: 'Base', logo: '🔵' },
-              { name: 'ESR', logo: '⚡' },
-              { name: 'Goerli', logo: '🔷', testnet: true },
-              { name: 'BSC Testnet', logo: '🟡', testnet: true },
-              { name: 'Mumbai', logo: '🟣', testnet: true },
-              { name: 'Arbitrum Sepolia', logo: '🔵', testnet: true },
-              { name: 'Fantom Testnet', logo: '🌟', testnet: true },
-              { name: 'Avalanche Fuji', logo: '🔺', testnet: true },
-              { name: 'Cronos Testnet', logo: '⚡', testnet: true },
-              { name: 'Bitrock Testnet', logo: '🪨', testnet: true }
-            ].map((network, index) => (
-              <div 
-                key={index} 
-                className={`bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 text-center ${
-                  network.testnet ? 'border-green-500/20' : ''
-                }`}
-              >
-                <div className="text-2xl mb-2">{network.logo}</div>
-                <h4 className="text-white font-medium text-sm">{network.name}</h4>
-                {network.testnet && (
-                  <span className="text-xs text-green-400">Testnet</span>
-                )}
+            <div className="col-span-full">
+              <div className="overflow-hidden relative">
+                <div className="flex animate-scroll">
+                  {[
+                    // First row - 6 mainnets
+                    { name: 'Ethereum', logo: '🔷' },
+                    { name: 'BSC', logo: '🟡' },
+                    { name: 'Polygon', logo: '🟣' },
+                    { name: 'Arbitrum', logo: '🔵' },
+                    { name: 'Fantom', logo: '🌟' },
+                    { name: 'Avalanche', logo: '🔺' },
+                  ].map((network, index) => (
+                    <div 
+                      key={`row1-${index}`} 
+                      className="flex-shrink-0 w-1/6 p-2"
+                    >
+                      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 text-center">
+                        <div className="text-2xl mb-2">{network.logo}</div>
+                        <h4 className="text-white font-medium text-sm">{network.name}</h4>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex animate-scroll2 mt-4">
+                  {[
+                    // Second row - 6 more mainnets
+                    { name: 'Cronos', logo: '⚡' },
+                    { name: 'Core', logo: '🔘' },
+                    { name: 'DogeChain', logo: '🐕' },
+                    { name: 'PulseChain', logo: '💗' },
+                    { name: 'ZetaChain', logo: '🔗' },
+                    { name: 'Unichain', logo: '🦄' },
+                  ].map((network, index) => (
+                    <div 
+                      key={`row2-${index}`} 
+                      className="flex-shrink-0 w-1/6 p-2"
+                    >
+                      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 text-center">
+                        <div className="text-2xl mb-2">{network.logo}</div>
+                        <h4 className="text-white font-medium text-sm">{network.name}</h4>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex animate-scroll3 mt-4">
+                  {[
+                    // Third row - 6 more mainnets
+                    { name: 'Bitrock', logo: '🪨' },
+                    { name: 'AlveyChain', logo: '🧝' },
+                    { name: 'OpenGPU', logo: '🖥️' },
+                    { name: 'Base', logo: '🔵' },
+                    { name: 'ESR', logo: '⚡' },
+                    { name: 'Goerli', logo: '🔷', testnet: true },
+                  ].map((network, index) => (
+                    <div 
+                      key={`row3-${index}`} 
+                      className="flex-shrink-0 w-1/6 p-2"
+                    >
+                      <div className={`bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 text-center ${
+                        network.testnet ? 'border-green-500/20' : ''
+                      }`}>
+                        <div className="text-2xl mb-2">{network.logo}</div>
+                        <h4 className="text-white font-medium text-sm">{network.name}</h4>
+                        {network.testnet && (
+                          <span className="text-xs text-green-400">Testnet</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex animate-scroll4 mt-4">
+                  {[
+                    // Fourth row - 6 testnets
+                    { name: 'BSC Testnet', logo: '🟡', testnet: true },
+                    { name: 'Mumbai', logo: '🟣', testnet: true },
+                    { name: 'Arbitrum Sepolia', logo: '🔵', testnet: true },
+                    { name: 'Fantom Testnet', logo: '🌟', testnet: true },
+                    { name: 'Avalanche Fuji', logo: '🔺', testnet: true },
+                    { name: 'Cronos Testnet', logo: '⚡', testnet: true },
+                  ].map((network, index) => (
+                    <div 
+                      key={`row4-${index}`} 
+                      className="flex-shrink-0 w-1/6 p-2"
+                    >
+                      <div className={`bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 text-center ${
+                        network.testnet ? 'border-green-500/20' : ''
+                      }`}>
+                        <div className="text-2xl mb-2">{network.logo}</div>
+                        <h4 className="text-white font-medium text-sm">{network.name}</h4>
+                        {network.testnet && (
+                          <span className="text-xs text-green-400">Testnet</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>

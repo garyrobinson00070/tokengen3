@@ -88,19 +88,19 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
   // Update network when testnet mode changes
   useEffect(() => {
     if (isTestnetMode && !config.network.id.includes('testnet')) {
-      // Switch to a testnet network
-      const testnet = networks.find(n => n.id.includes('testnet'));
+      // Switch to a testnet network (first one in the list)
+      const testnet = testnets[0];
       if (testnet) {
         updateConfig({ network: testnet });
       }
     } else if (!isTestnetMode && config.network.id.includes('testnet')) {
-      // Switch to a mainnet network
-      const mainnet = networks.find(n => !n.id.includes('testnet'));
+      // Switch to a mainnet network (first one in the list)
+      const mainnet = mainnets[0];
       if (mainnet) {
         updateConfig({ network: mainnet });
       }
     }
-  }, [isTestnetMode, config.network.id]);
+  }, [isTestnetMode]);
 
   // Show network mismatch modal when network is selected
   const handleNetworkSelect = (network: Network) => {

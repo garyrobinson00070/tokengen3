@@ -163,11 +163,11 @@ export const GovernanceDashboard: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => window.location.href = '/'}
             className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
+            <span>Back to Home</span>
           </button>
           
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

@@ -258,11 +258,11 @@ export const ProposalDetail: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate(`/governance/${tokenAddress}`)}
+            onClick={() => window.location.href = '/'}
             className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Governance</span>
+            <span>Back to Home</span>
           </button>
           
           <div className="flex items-center space-x-3 mb-2">
