@@ -549,3 +549,4 @@ export const BadgeManagementPanel: React.FC = () => {
         </div>
       ))}
     </div>
+  )}
