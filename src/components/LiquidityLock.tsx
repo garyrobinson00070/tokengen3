@@ -38,7 +38,7 @@ export const LiquidityLock: React.FC = () => {
   const [copied, setCopied] = useState<string | null>(null);
 
   // Liquidity Locker contract address
-  const LOCKER_ADDRESS = '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'; // Replace with actual address
+  const LOCKER_ADDRESS = ethers.getAddress('0x742d35cc6634c0532925a3b8d4c9db96590c6c8c'); // Replace with actual address
 
   useEffect(() => {
     if (isConnected && address) {
