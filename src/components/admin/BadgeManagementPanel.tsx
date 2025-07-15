@@ -51,8 +51,10 @@ export const BadgeManagementPanel: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && localStorage.getItem('authToken')) {
       loadBadges();
+    } else if (isConnected && !localStorage.getItem('authToken')) {
+      setError('Authentication required. Please log in to access the badge management panel.');
     }
   }, [isConnected]);
 
@@ -67,7 +69,8 @@ export const BadgeManagementPanel: React.FC = () => {
     try {
       const authToken = localStorage.getItem('authToken');
       if (!authToken) {
-        throw new Error('Not authenticated');
+        setError('Authentication required. Please log in to access the badge management panel.');
+        return;
       }
       
       const response = await fetch('/api/badges', {
@@ -77,7 +80,12 @@ export const BadgeManagementPanel: React.FC = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch badges');
+        if (response.status === 401) {
+          setError('Authentication failed. Please log in again.');
+        } else {
+          throw new Error('Failed to fetch badges');
+        }
+        return;
       }
       
       const data = await response.json();
