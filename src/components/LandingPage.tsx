@@ -361,14 +361,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 
                 <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl p-6 border border-green-500/30">
                   <h4 className="text-white font-semibold mb-2">Transfer Fees</h4>
-                    <code className="font-mono">KYC Verified</code>: Team identity verified
                     Implement automatic fees and redistribution mechanisms
                   </p>
                 </div>
-                    <code className="font-mono">Audit Certified</code>: Smart contract audited
                 <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-6 border border-purple-500/30">
                   <h4 className="text-white font-semibold mb-2">Auto Verification</h4>
                   <p className="text-gray-300 text-sm">
+                    Contracts verified on blockchain explorers with trust badges
                     Contracts verified on blockchain explorers with trust badges
                   </p>
                 </div>
