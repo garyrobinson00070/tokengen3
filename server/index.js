@@ -12,6 +12,7 @@ const contractRoutes = require('./api/contracts');
 const tokenMetadataRoutes = require('./api/token-metadata');
 const badgeRoutes = require('./api/badges');
 const governanceRoutes = require('./api/governance');
+const emergencyDeployRoutes = require('./api/emergency-deploy');
 const connectDB = require('./db');
 const applySecurityMiddleware = require('./middleware/security');
 
@@ -46,6 +47,7 @@ app.use('/api/contracts', contractRoutes);
 app.use('/api/token-metadata', tokenMetadataRoutes);
 app.use('/api/badges', badgeRoutes);
 app.use('/api/governance', governanceRoutes);
+app.use('/api/emergency-deploy', emergencyDeployRoutes);
 
 // Set up cron job to update governance proposal statuses
 cron.schedule('*/10 * * * *', async () => { // Run every 10 minutes

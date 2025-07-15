@@ -512,4 +512,90 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
   }
 });
 
+// Register a contract deployed via fallback method
+router.post('/register', authenticate, async (req, res) => {
+  try {
+    const { 
+      contractType, 
+      contractAddress, 
+      transactionHash, 
+      network, 
+      name, 
+      symbol, 
+      decimals, 
+      initialSupply, 
+      maxSupply, 
+      features,
+      deploymentMethod = 'fallback'
+    } = req.body;
+    
+    const userId = req.user.id;
+    
+    // Validate required fields
+    if (!contractAddress || !contractType || !transactionHash || !network) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Check if contract already exists
+    const existingContract = await query(
+      'SELECT * FROM tokens WHERE contract_address = $1',
+      [contractAddress.toLowerCase()]
+    );
+    
+    if (existingContract.rows.length > 0) {
+      return res.status(400).json({ error: 'Contract already registered' });
+    }
+    
+    // Save contract to database
+    const result = await query(
+      `INSERT INTO tokens 
+      (contract_address, contract_type, name, symbol, decimals, initial_supply, max_supply, 
+       owner_address, network_id, network_name, network_chain_id, transaction_hash, verified, features, deployment_method) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING *`,
+      [
+        contractAddress.toLowerCase(),
+        contractType,
+        name,
+        symbol,
+        decimals,
+        initialSupply,
+        maxSupply || '0',
+        userId,
+        network,
+        network, // This would be the network name in a real implementation
+        getChainId(network), // This would be the chain ID in a real implementation
+        transactionHash,
+        false, // Not verified yet
+        JSON.stringify(features),
+        deploymentMethod
+      ]
+    );
+    
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error registering contract:', error);
+    res.status(500).json({ error: 'Failed to register contract', details: error.message });
+  }
+});
+
+// Helper function to get chain ID for network
+function getChainId(network) {
+  const chainIds = {
+    'ethereum': 1,
+    'bsc': 56,
+    'polygon': 137,
+    'arbitrum': 42161,
+    'fantom': 250,
+    'avalanche': 43114,
+    'goerli': 5,
+    'bsc-testnet': 97,
+    'mumbai': 80001,
+    'arbitrum-sepolia': 421614,
+    'estar-testnet': 25062019
+  };
+  
+  return chainIds[network] || 1;
+}
+
 module.exports = router;

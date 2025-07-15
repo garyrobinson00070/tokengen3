@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Zap, Clock, Shield, Globe } from 'lucide-react';
 import { TokenConfig, DeploymentResult } from '../types';
-import { RemixFallback } from './RemixFallback';
+import { DeploymentFallback } from './DeploymentFallback';
 import { NetworkMismatchModal } from './NetworkMismatchModal';
 import { TokenMetadataForm } from './TokenMetadataForm';
 import { contractService } from '../services/contractService'; 
@@ -25,6 +25,7 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
   const [deploymentFailed, setDeploymentFailed] = useState(false);
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
   const [useFactory, setUseFactory] = useState(true);
+  const [deploymentMethod, setDeploymentMethod] = useState<'primary' | 'fallback' | 'emergency'>('primary');
   const [showMetadataForm, setShowMetadataForm] = useState(false);
   const [tokenMetadata, setTokenMetadata] = useState({
     tokenAddress: '',
@@ -102,6 +103,9 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     setDeploymentError(null);
     
     try {
+      // Store metadata for later use after deployment
+      localStorage.setItem('pendingTokenMetadata', JSON.stringify(tokenMetadata));
+      
       // Check if we're on the correct network
       const currentNetwork = await web3Service.getCurrentNetwork();
       if (currentNetwork?.chainId !== config.network.chainId) {
@@ -112,14 +116,14 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
         }
       }
       
-      // Store metadata for later use after deployment
-      localStorage.setItem('pendingTokenMetadata', JSON.stringify(tokenMetadata));
-      
       // Deploy token using contractService
       const result = await contractService.deployToken({
         ...config,
         useFactory
       });
+      
+      // Get deployment method
+      setDeploymentMethod(contractService.getDeploymentMethod());
       
       onDeploy(result);
       
@@ -147,6 +151,20 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     }
   };
 
+  // Get deployment method label and color
+  const getDeploymentMethodInfo = () => {
+    switch (deploymentMethod) {
+      case 'primary':
+        return { label: 'Primary (Hardhat)', color: 'text-green-400' };
+      case 'fallback':
+        return { label: 'Fallback (Frontend)', color: 'text-yellow-400' };
+      case 'emergency':
+        return { label: 'Emergency (Backend)', color: 'text-red-400' };
+      default:
+        return { label: 'Unknown', color: 'text-gray-400' };
+    }
+  };
+
   const getActiveFeatures = () => {
     const features = [];
     if (config.features.burnable) features.push('Burnable');
@@ -162,7 +180,14 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
 
   // Show Remix fallback if deployment failed
   if (deploymentFailed) {
-    return <RemixFallback config={config} onBack={() => setDeploymentFailed(false)} />;
+    return (
+      <DeploymentFallback 
+        config={config} 
+        onBack={() => setDeploymentFailed(false)} 
+        onDeploy={onDeploy}
+        primaryError={deploymentError || undefined}
+      />
+    );
   }
 
   const getVestingCategories = () => {
@@ -365,6 +390,12 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Estimated Time</span>
                   <span className="text-white font-medium">{costEstimate.timeEstimate}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">Deployment Method</span>
+                  <span className={`font-medium ${getDeploymentMethodInfo().color}`}>
+                    {getDeploymentMethodInfo().label}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Service Fee</span>

@@ -5,10 +5,15 @@ import { TokenMetadataForm } from './TokenMetadataForm';
 
 interface DeploymentSuccessProps {
   result: DeploymentResult;
+  deploymentMethod?: 'primary' | 'fallback' | 'emergency';
   onStartNew: () => void;
 }
 
-export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, onStartNew }) => {
+export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ 
+  result, 
+  deploymentMethod = 'primary',
+  onStartNew 
+}) => {
   const [copied, setCopied] = React.useState<string | null>(null);
   const [showMetadataForm, setShowMetadataForm] = React.useState(false);
   const [pendingMetadata, setPendingMetadata] = React.useState<any>(null);
@@ -57,6 +62,20 @@ export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, on
     }
   };
   
+  // Get deployment method label and color
+  const getDeploymentMethodInfo = () => {
+    switch (deploymentMethod) {
+      case 'primary':
+        return { label: 'Primary (Hardhat)', color: 'text-green-400 bg-green-500/20' };
+      case 'fallback':
+        return { label: 'Fallback (Frontend)', color: 'text-yellow-400 bg-yellow-500/20' };
+      case 'emergency':
+        return { label: 'Emergency (Backend)', color: 'text-red-400 bg-red-500/20' };
+      default:
+        return { label: 'Unknown', color: 'text-gray-400 bg-gray-500/20' };
+    }
+  };
+
   // Function to add token to MetaMask
   const addTokenToMetaMask = async () => {
     if (typeof window.ethereum === 'undefined') {
@@ -105,6 +124,11 @@ export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, on
           <h1 className="text-4xl font-bold text-white mb-2">Token Deployed Successfully!</h1>
           <p className="text-gray-300 text-lg">
             Your token contract has been deployed and verified on {result.network.name}
+            {deploymentMethod !== 'primary' && (
+              <span className={`ml-2 px-3 py-1 rounded-full text-sm ${getDeploymentMethodInfo().color}`}>
+                {getDeploymentMethodInfo().label}
+              </span>
+            )}
           </p>
         </div>
 
@@ -153,6 +177,13 @@ export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, on
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Gas Used</label>
               <div className="text-white font-medium">{result.gasUsed}</div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Deployment Method</label>
+              <div className={`px-3 py-1 rounded-lg inline-block ${getDeploymentMethodInfo().color}`}>
+                {getDeploymentMethodInfo().label}
+              </div>
             </div>
 
             <div>

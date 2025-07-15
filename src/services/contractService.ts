@@ -2,6 +2,7 @@ import { TokenConfig, Network, VestingConfig } from '../types';
 import { PresaleConfig } from '../types/presale';
 import { AppError, ErrorType, reportError } from './errorHandler';
 import { web3Service } from './web3Service';
+import { fallbackDeploymentService } from './fallbackDeploymentService';
 import { MODE_STORAGE_KEY, DEFAULT_MODE } from '../config/constants';
 
 export interface DeploymentResult {
@@ -16,6 +17,7 @@ export interface DeploymentResult {
 export class ContractService {
   private apiUrl: string;
   private authToken: string | null = null;
+  private deploymentMethod: 'primary' | 'fallback' | 'emergency' = 'primary';
 
   constructor() {
     this.apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -198,6 +200,7 @@ export class ContractService {
   }
 
   async deployToken(config: TokenConfig): Promise<DeploymentResult> {
+    this.deploymentMethod = 'primary';
     try {
       const contractType = this.getContractType(config);
       const constructorParams = this.getConstructorParams(config);
@@ -270,6 +273,7 @@ export class ContractService {
       const result = await response.json();
 
       return {
+        deploymentMethod: this.deploymentMethod,
         contractAddress: result.contractAddress,
         transactionHash: result.transactionHash,
         network: config.network,
@@ -278,17 +282,89 @@ export class ContractService {
         deploymentCost: result.deploymentCost
       };
     } catch (error) {
-      console.error('Error deploying token:', error);
-      if (error instanceof AppError) {
-        throw error;
-      } else {
-        throw new AppError(
-          (error as Error).message || 'Token deployment failed',
-          ErrorType.UNKNOWN,
-          error
-        );
+      console.error('Primary deployment failed, trying fallback:', error);
+      
+      // Try frontend fallback
+      try {
+        this.deploymentMethod = 'fallback';
+        console.log('Attempting frontend fallback deployment...');
+        
+        const result = await fallbackDeploymentService.deployContract(config);
+        
+        return {
+          deploymentMethod: this.deploymentMethod,
+          contractAddress: result.contractAddress,
+          transactionHash: result.transactionHash,
+          network: config.network,
+          explorerUrl: result.explorerUrl,
+          gasUsed: result.gasUsed,
+          deploymentCost: result.deploymentCost
+        };
+      } catch (fallbackError) {
+        console.error('Frontend fallback deployment failed, trying emergency backend:', fallbackError);
+        
+        // Try emergency backend deployment
+        try {
+          this.deploymentMethod = 'emergency';
+          console.log('Attempting emergency backend deployment...');
+          
+          const authToken = this.authToken || localStorage.getItem('authToken');
+          if (!authToken) {
+            throw new Error('Authentication required for emergency deployment');
+          }
+          
+          const response = await fetch(`${this.apiUrl}/api/emergency-deploy/token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+              contractType: this.getContractType(config),
+              constructorArgs: this.getConstructorParams(config),
+              network: config.network.id
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || errorData.details || 'Emergency deployment failed');
+          }
+          
+          const result = await response.json();
+          
+          return {
+            deploymentMethod: this.deploymentMethod,
+            contractAddress: result.contractAddress,
+            transactionHash: result.transactionHash,
+            network: config.network,
+            explorerUrl: `${config.network.explorerUrl}/token/${result.contractAddress}`,
+            gasUsed: result.gasUsed,
+            deploymentCost: result.deploymentCost
+          };
+        } catch (emergencyError) {
+          console.error('All deployment methods failed:', emergencyError);
+          
+          // All methods failed, throw comprehensive error
+          throw new AppError(
+            'All deployment methods failed. Please try again later.',
+            ErrorType.CONTRACT,
+            {
+              primaryError: error,
+              fallbackError,
+              emergencyError
+            }
+          );
+        }
       }
     }
+  }
+  
+  /**
+   * Get the current deployment method
+   */
+  public getDeploymentMethod(): 'primary' | 'fallback' | 'emergency' {
+    return this.deploymentMethod;
   }
 
   async deployPresale(config: PresaleConfig): Promise<DeploymentResult> {

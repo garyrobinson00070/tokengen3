@@ -40,6 +40,7 @@ function App() {
   const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore' | 'manage' | 'liquidity-lock' | 'airdrop' | 'admin' | 'governance' | 'proposal'>('landing');
   const [tokenConfig, setTokenConfig] = useState<TokenConfig | null>(null);
   const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
+  const [deploymentMethod, setDeploymentMethod] = useState<'primary' | 'fallback' | 'emergency'>('primary');
 
   // Handle network switching when mode changes or wallet connects
   useEffect(() => {
@@ -104,6 +105,7 @@ function App() {
 
   const handleDeploy = (result: DeploymentResult) => {
     setDeploymentResult(result);
+    setDeploymentMethod(result.deploymentMethod || 'primary');
     setCurrentStep('success');
   };
 
@@ -187,11 +189,12 @@ function App() {
     case 'success':
       return (
         <>
-        <DeploymentSuccess
-          result={deploymentResult!}
-          onStartNew={handleStartNew}
-        />
-        <NetworkModeIndicator />
+          <DeploymentSuccess
+            result={deploymentResult!}
+            deploymentMethod={deploymentMethod}
+            onStartNew={handleStartNew}
+          />
+          <NetworkModeIndicator />
         </>
       );
     
