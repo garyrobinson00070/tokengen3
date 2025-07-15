@@ -442,7 +442,7 @@ export const BadgeManagementPanel: React.FC = () => {
         </div>
       )}
 
-      /* Badges List */}
+      {/* Badges List */}
 {isLoading ? (
   <div className="flex items-center justify-center py-12">
     <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -550,3 +550,7 @@ export const BadgeManagementPanel: React.FC = () => {
       ))}
     </div>
   )}
+      </div>
+    </div>
+  );
+}
