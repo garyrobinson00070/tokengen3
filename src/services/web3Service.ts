@@ -262,7 +262,7 @@ export class Web3Service {
   private getNetworkName(chainId: number): string {
     const networks: Record<number, string> = {
       1: 'Ethereum',
-      5: 'Goerli Testnet',
+      5: 'Goerli',
       56: 'Binance Smart Chain',
       97: 'BSC Testnet',
       137: 'Polygon',
@@ -438,11 +438,20 @@ export class Web3Service {
   private symbolToId(symbol: string): string {
     const mapping: Record<string, string> = {
       'ETH': 'ethereum',
-      'BNB': 'binancecoin',
+      'BNB': 'binance-coin',
       'MATIC': 'matic-network',
       'FTM': 'fantom',
       'AVAX': 'avalanche-2',
-      'ESR': 'estar'
+      'ESR': 'estar',
+      'CRO': 'crypto-com-chain',
+      'CORE': 'core-dao',
+      'DOGE': 'dogecoin',
+      'PLS': 'pulsechain',
+      'ZETA': 'zetachain',
+      'UNI': 'uniswap',
+      'BROCK': 'bitrock',
+      'ALV': 'alveychain',
+      'GPU': 'opengpu'
     };
     return mapping[symbol] || symbol.toLowerCase();
   }
@@ -546,12 +555,24 @@ export class Web3Service {
   async deployContract(abi: any, bytecode: string, args: any[]): Promise<{address: string, txHash: string}> {
     if (!this.signer) throw new AppError('Signer not available', ErrorType.WALLET);
     
+    // Ensure all address arguments are properly checksummed
+    const processedArgs = args.map(arg => {
+      if (typeof arg === 'string' && arg.startsWith('0x') && arg.length === 42) {
+        try {
+          return ethers.getAddress(arg);
+        } catch (e) {
+          return arg; // Return original if not a valid address
+        }
+      }
+      return arg;
+    });
+    
     try {
       // Create contract factory
       const factory = new ethers.ContractFactory(abi, bytecode, this.signer);
       
       // Deploy contract
-      const contract = await factory.deploy(...args);
+      const contract = await factory.deploy(...processedArgs);
       await contract.waitForDeployment();
       
       const address = await contract.getAddress();
