@@ -18,6 +18,7 @@ export class ContractService {
   private apiUrl: string;
   private authToken: string | null = null;
   private deploymentMethod: 'primary' | 'fallback' | 'emergency' = 'primary';
+  private isTestnetMode: boolean = false;
 
   constructor() {
     this.apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -457,11 +458,19 @@ export class ContractService {
   async getDeployedTokens(): Promise<any[]> {
     try {
       // Use the correct API URL with proper error handling
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const apiUrl = this.apiUrl;
       
       // Check if API URL is accessible
       try {
-        await fetch(`${apiUrl}/health`, { method: 'HEAD' });
+        const healthResponse = await fetch(`${apiUrl}/health`, { 
+          method: 'HEAD',
+          // Add cache control to prevent caching
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        
+        if (!healthResponse.ok) {
+          throw new Error(`API health check failed with status: ${healthResponse.status}`);
+        }
       } catch (error) {
         console.warn('API health check failed, using mock data:', error);
         // Return mock data if API is not accessible
@@ -470,8 +479,8 @@ export class ContractService {
       
       const response = await fetch(`${apiUrl}/api/contracts/deployed`, {
         headers: this.getAuthHeaders(),
-        // Add a cache-busting parameter to avoid stale data
-        cache: 'no-cache'
+        // Prevent caching
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -495,7 +504,7 @@ export class ContractService {
   // Mock data for development/testing when API is unavailable
   private getMockTokens(): any[] {
     console.log('Using mock token data');
-    return [
+    const mockTokens = [
       {
         id: '1',
         name: 'Example Token',
@@ -517,6 +526,30 @@ export class ContractService {
         transfers: 1
       }
     ];
+    
+    // Add more mock tokens for testing
+    mockTokens.push({
+      id: '2',
+      name: 'ESTAR Token',
+      symbol: 'ESR',
+      contractAddress: '0x742d35cc6634c0532925a3b8d4c9db96590c6c8c',
+      network: {
+        id: this.isTestnetMode ? 'estar-testnet' : 'estar',
+        name: this.isTestnetMode ? 'ESTAR Testnet' : 'ESTAR',
+        chainId: 25062019,
+      },
+      deploymentDate: new Date().toISOString(),
+      totalSupply: '100000000',
+      maxSupply: '1000000000',
+      decimals: 18,
+      transactionHash: '0xdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+      features: ['Burnable', 'Mintable'],
+      status: 'verified',
+      holders: 100,
+      transfers: 250
+    });
+    
+    return mockTokens;
   }
 
   async getDeployedPresales(): Promise<any[]> {

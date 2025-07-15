@@ -38,7 +38,8 @@ export const LiquidityLock: React.FC = () => {
   const [copied, setCopied] = useState<string | null>(null);
 
   // Liquidity Locker contract address
-  const LOCKER_ADDRESS = '0x742d35cc6634c0532925a3b8d4c9db96590c6c8c'; // Replace with actual address
+  // Using lowercase to avoid checksum errors during initialization
+  const LOCKER_ADDRESS = '0x742d35cc6634c0532925a3b8d4c9db96590c6c8c'.toLowerCase();
 
   useEffect(() => {
     if (isConnected && address) {
@@ -56,59 +57,76 @@ export const LiquidityLock: React.FC = () => {
       const provider = web3Service.getProvider();
       if (!provider) throw new Error('Provider not available');
       
-      const lockerContract = new ethers.Contract(
-        ethers.getAddress(LOCKER_ADDRESS), 
-        LiquidityLockerABI, 
-        provider
-      );
-      
-      // Get user's lock IDs with error handling for empty contract response
-      let lockIds;
-      try {
-        lockIds = await lockerContract.getUserLocks(address);
-      } catch (error: any) {
-        // Handle BAD_DATA error when contract returns empty data (0x)
-        if (error.code === 'BAD_DATA' && error.value === '0x') {
-          console.warn('Contract returned empty data - treating as no locks found');
-          setLocks([]);
-          return;
-        }
-        throw error;
-      }
-      
-      // Get lock details for each ID
-      const lockPromises = lockIds.map(async (id: any) => {
-        const lockInfo = await lockerContract.getLockInfo(id);
-        
-        // Get token symbol
-        let tokenSymbol = 'LP';
+      // Helper function to safely get checksummed address
+      const getChecksummedAddress = (addr: string): string => {
         try {
-          const tokenContract = new ethers.Contract(
-            lockInfo[0],
-            ['function symbol() view returns (string)'],
-            provider
-          );
-          tokenSymbol = await tokenContract.symbol();
+          return ethers.getAddress(addr);
         } catch (error) {
-          console.error('Error getting token symbol:', error);
+          console.error('Invalid address format:', addr, error);
+          return addr;
+        }
+      };
+      
+      try {
+        const lockerContract = new ethers.Contract(
+          getChecksummedAddress(LOCKER_ADDRESS), 
+          LiquidityLockerABI, 
+          provider
+        );
+      
+        // Get user's lock IDs with error handling for empty contract response
+        let lockIds;
+        try {
+          lockIds = await lockerContract.getUserLocks(address);
+        } catch (error: any) {
+          // Handle BAD_DATA error when contract returns empty data (0x)
+          if (error.code === 'BAD_DATA' && error.value === '0x') {
+            console.warn('Contract returned empty data - treating as no locks found');
+            setLocks([]);
+            return;
+          }
+          throw error;
         }
         
-        return {
-          id: id.toString(),
-          token: lockInfo[0],
-          tokenSymbol,
-          amount: ethers.formatEther(lockInfo[2]),
-          lockTime: Number(lockInfo[3]),
-          unlockTime: Number(lockInfo[4]),
-          withdrawn: lockInfo[5]
-        };
-      });
-      
-      const lockDetails = await Promise.all(lockPromises);
-      setLocks(lockDetails);
+        // Get lock details for each ID
+        const lockPromises = lockIds.map(async (id: any) => {
+          const lockInfo = await lockerContract.getLockInfo(id);
+          
+          // Get token symbol
+          let tokenSymbol = 'LP';
+          try {
+            const tokenContract = new ethers.Contract(
+              getChecksummedAddress(lockInfo[0]),
+              ['function symbol() external view returns (string)'],
+              provider
+            );
+            tokenSymbol = await tokenContract.symbol();
+          } catch (error) {
+            console.error('Error getting token symbol:', error);
+          }
+          
+          return {
+            id: id.toString(),
+            token: lockInfo[0],
+            tokenSymbol,
+            amount: ethers.formatEther(lockInfo[2]),
+            lockTime: Number(lockInfo[3]),
+            unlockTime: Number(lockInfo[4]),
+            withdrawn: lockInfo[5]
+          };
+        });
+        
+        const lockDetails = await Promise.all(lockPromises);
+        setLocks(lockDetails);
+      } catch (error: any) {
+        console.error('Error interacting with locker contract:', error);
+        setError('Failed to load your locked liquidity. Please try again.');
+        setLocks([]);
+      }
     } catch (error) {
       console.error('Error loading locks:', error);
       setError('Failed to load your locked liquidity. Please try again.');
+      setLocks([]);
     } finally {
       setIsLoading(false);
     }
@@ -125,6 +143,16 @@ export const LiquidityLock: React.FC = () => {
       const provider = web3Service.getProvider();
       const signer = web3Service.getSigner();
       if (!provider || !signer) throw new Error('Wallet connection issue');
+
+      // Helper function to safely get checksummed address
+      const getChecksummedAddress = (addr: string): string => {
+        try {
+          return ethers.getAddress(addr);
+        } catch (error) {
+          console.error('Invalid address format:', addr, error);
+          return addr;
+        }
+      };
       
       // Check if token is valid
       if (!ethers.isAddress(token)) {
@@ -145,7 +173,7 @@ export const LiquidityLock: React.FC = () => {
       
       // Check token allowance
       const tokenContract = new ethers.Contract(
-        token,
+        getChecksummedAddress(token),
         [
           'function allowance(address,address) view returns (uint256)', 
           'function approve(address,uint256) returns (bool)'
