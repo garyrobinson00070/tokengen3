@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Shield, Globe, CheckCircle, Star, Layers } from 'lucide-react';
+import { ArrowRight, Shield, Globe, CheckCircle, Star, Layers, Zap } from 'lucide-react';
 import { WalletConnection } from './WalletConnection';
 import { useWallet } from '../hooks/useWallet';
 import { NetworkModeToggle } from './NetworkModeToggle';
