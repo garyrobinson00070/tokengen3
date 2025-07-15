@@ -361,6 +361,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 
                 <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl p-6 border border-green-500/30">
                   <h4 className="text-white font-semibold mb-2">Transfer Fees</h4>
+                  <p className="text-gray-300 text-sm">
                     Implement automatic fees and redistribution mechanisms
                   </p>
                 </div>
