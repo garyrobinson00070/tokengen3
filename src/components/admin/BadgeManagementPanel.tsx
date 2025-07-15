@@ -442,106 +442,100 @@ export const BadgeManagementPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Badges List */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-        </div>
-      ) : filteredBadges.length === 0 ? (
-        <div className="text-center py-12">
-          <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
-            <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Authentication Required</h3>
-            <p className="text-gray-300">
-              Please connect your wallet to access the badge management panel.
-            </p>
+      /* Badges List */}
+{isLoading ? (
+  <div className="flex items-center justify-center py-12">
+    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+  </div>
+) : filteredBadges.length === 0 ? (
+  <div className="text-center py-12">
+    <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+    <h3 className="text-xl font-semibold text-white mb-2">No Badges Found</h3>
+    <p className="text-gray-300">Try adjusting your filters or add a new badge.</p>
+  </div>
+) : (
+  <div className="space-y-4">
+    {filteredBadges.map((badge) => (
+      <div key={badge.id} className="p-4 bg-white/5 rounded-lg border border-white/10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2 mb-2">
+              {badge.badge_type === 'kyc' && <CheckCircle className="w-5 h-5 text-green-400" />}
+              {badge.badge_type === 'audit' && <FileText className="w-5 h-5 text-blue-400" />}
+              {badge.badge_type === 'safu' && <Shield className="w-5 h-5 text-purple-400" />}
+              
+              <span className="text-lg font-semibold text-white">
+                {badge.badge_type === 'kyc' && 'KYC Verified'}
+                {badge.badge_type === 'audit' && 'Audit Verified'}
+                {badge.badge_type === 'safu' && 'SAFU (Team Locked)'}
+              </span>
+              
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                badge.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                badge.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>
+                {badge.status}
+              </span>
+            </div>
+            
+            <div className="text-gray-300 text-sm mb-2">
+              <span className="font-medium">{badge.token_name}</span> ({badge.token_symbol})
+            </div>
+            
+            <div className="text-gray-400 text-xs font-mono">
+              {badge.token_address}
+            </div>
+            
+            {badge.notes && (
+              <div className="mt-2 text-gray-300 text-sm">
+                {badge.notes}
+              </div>
+            )}
           </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredBadges.map((badge) => (
-            <div key={badge.id} className="p-4 bg-white/5 rounded-lg border border-white/10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center space-x-2 mb-2">
-                    {badge.badge_type === 'kyc' && <CheckCircle className="w-5 h-5 text-green-400" />}
-                    {badge.badge_type === 'audit' && <FileText className="w-5 h-5 text-blue-400" />}
-                    {badge.badge_type === 'safu' && <Shield className="w-5 h-5 text-purple-400" />}
-                    
-                    <span className="text-lg font-semibold text-white">
-                      {badge.badge_type === 'kyc' && 'KYC Verified'}
-                      {badge.badge_type === 'audit' && 'Audit Verified'}
-                      {badge.badge_type === 'safu' && 'SAFU (Team Locked)'}
-                    </span>
-                    
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      badge.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                      badge.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-red-500/20 text-red-400'
-                    }`}>
-                      {badge.status}
-                    </span>
-                  </div>
-                  
-                  <div className="text-gray-300 text-sm mb-2">
-                    <span className="font-medium">{badge.token_name}</span> ({badge.token_symbol})
-                  </div>
-                  
-                  <div className="text-gray-400 text-xs font-mono">
-                    {badge.token_address}
-                  </div>
-                  
-                  {badge.notes && (
-                    <div className="mt-2 text-gray-300 text-sm">
-                      {badge.notes}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  {badge.status === 'pending' && (
-                    <button
-                      onClick={() => handleUpdateBadgeStatus(badge.id, 'approved')}
-                      className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors flex items-center space-x-1"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Approve</span>
-                    </button>
-                  )}
-                  
-                  {badge.status === 'approved' && (
-                    <button
-                      onClick={() => handleUpdateBadgeStatus(badge.id, 'revoked')}
-                      className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors flex items-center space-x-1"
-                    >
-                      <X className="w-4 h-4" />
-                      <span>Revoke</span>
-                    </button>
-                  )}
-                  
-                  {badge.status === 'revoked' && (
-                    <button
-                      onClick={() => handleUpdateBadgeStatus(badge.id, 'approved')}
-                      className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors flex items-center space-x-1"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Restore</span>
-                    </button>
-                  )}
-                  
-                  {badge.document_url && (
-                    <a
-                      href={badge.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors flex items-center space-x-1"
-                    >
-                      <FileText className="w-4 h-4" />
-                      <span>View Document</span>
-                    </a>
-                  )}
+          
+          <div className="flex flex-wrap gap-2">
+            {badge.status === 'pending' && (
+              <button
+                onClick={() => handleUpdateBadgeStatus(badge.id, 'approved')}
+                className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors flex items-center space-x-1"
+              >
+                <Check className="w-4 h-4" />
+                <span>Approve</span>
+              </button>
+            )}
+
+            {badge.status === 'approved' && (
+              <button
+                onClick={() => handleUpdateBadgeStatus(badge.id, 'revoked')}
+                className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors flex items-center space-x-1"
+              >
+                <X className="w-4 h-4" />
+                <span>Revoke</span>
+              </button>
+            )}
+
+            {badge.status === 'revoked' && (
+              <button
+                onClick={() => handleUpdateBadgeStatus(badge.id, 'approved')}
+                className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors flex items-center space-x-1"
+              >
+                <Check className="w-4 h-4" />
+                <span>Restore</span>
+              </button>
+            )}
+
+            {badge.document_url && (
+              <a
+                href={badge.document_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors flex items-center space-x-1"
+              >
+                <FileText className="w-4 h-4" />
+                <span>View Document</span>
+              </a>
+            )}
                   
                   <button
                     onClick={() => handleDeleteBadge(badge.id)}
