@@ -11,7 +11,7 @@ services:
     depends_on:
       - backend
     environment:
-      - VITE_API_URL=http://localhost:3001
+      - VITE_API_URL=http://backend:3001
       - VITE_ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL}
       - VITE_BSC_RPC_URL=${BSC_RPC_URL}
       - VITE_POLYGON_RPC_URL=${POLYGON_RPC_URL}
@@ -32,7 +32,7 @@ services:
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/tokenforge
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - FRONTEND_URL=https://localhost:5173
+      - FRONTEND_URL=http://localhost
       - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL}
       - BSC_RPC_URL=${BSC_RPC_URL}
       - POLYGON_RPC_URL=${POLYGON_RPC_URL}
