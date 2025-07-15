@@ -264,6 +264,7 @@ export const BadgeManagementPanel: React.FC = () => {
           Please connect your wallet to access the badge management panel.
         </p>
       </div>
+    </div>
     );
   }
 
