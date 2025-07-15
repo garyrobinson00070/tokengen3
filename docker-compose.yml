@@ -1,0 +1,70 @@
+version: '3'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:3001
+      - VITE_ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL}
+      - VITE_BSC_RPC_URL=${BSC_RPC_URL}
+      - VITE_POLYGON_RPC_URL=${POLYGON_RPC_URL}
+      - VITE_ESR_TOKEN_ADDRESS=${ESR_TOKEN_ADDRESS}
+    restart: always
+
+  # Backend service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    environment:
+      - PORT=3001
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/tokenforge
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - FRONTEND_URL=http://localhost:5173
+      - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL}
+      - BSC_RPC_URL=${BSC_RPC_URL}
+      - POLYGON_RPC_URL=${POLYGON_RPC_URL}
+      - ARBITRUM_RPC_URL=${ARBITRUM_RPC_URL}
+      - FANTOM_RPC_URL=${FANTOM_RPC_URL}
+      - AVALANCHE_RPC_URL=${AVALANCHE_RPC_URL}
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY}
+      - BSCSCAN_API_KEY=${BSCSCAN_API_KEY}
+      - POLYGONSCAN_API_KEY=${POLYGONSCAN_API_KEY}
+      - ESR_TOKEN_ADDRESS=${ESR_TOKEN_ADDRESS}
+      - PLATFORM_WALLET=${PLATFORM_WALLET}
+      - NODE_ENV=production
+    restart: always
+    volumes:
+      - ./deployments:/app/deployments
+
+  # PostgreSQL for persistent storage
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=tokenforge
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
