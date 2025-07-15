@@ -288,6 +288,7 @@
                 )}
               </button>
             </div>
+                {vestingInfo && (
           </div>
         </div>
       )}
