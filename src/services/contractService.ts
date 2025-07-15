@@ -456,15 +456,18 @@ export class ContractService {
 
   async getDeployedTokens(): Promise<any[]> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/contracts/deployed`, {
+      // Use the correct API URL with proper error handling
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/contracts/deployed`, {
         headers: this.getAuthHeaders(),
         // Add a cache-busting parameter to avoid stale data
         cache: 'no-cache'
       });
 
       if (!response.ok) {
-        console.error(`Failed to fetch deployed contracts: ${response.status} ${response.statusText}`);
-        return [];
+        const errorText = await response.text();
+        console.error(`Failed to fetch deployed contracts: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -481,13 +484,16 @@ export class ContractService {
 
   async getDeployedPresales(): Promise<any[]> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/contracts/deployed`, {
+      // Use the correct API URL with proper error handling
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/contracts/deployed`, {
         headers: this.getAuthHeaders()
       });
 
       if (!response.ok) {
-        console.error(`Failed to fetch deployed presales: ${response.status} ${response.statusText}`);
-        return [];
+        const errorText = await response.text();
+        console.error(`Failed to fetch deployed presales: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -504,11 +510,14 @@ export class ContractService {
 
   async getPublicPresales(): Promise<any[]> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/contracts/presales/public`);
+      // Use the correct API URL with proper error handling
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/contracts/presales/public`);
 
       if (!response.ok) {
-        console.error(`Failed to fetch public presales: ${response.status} ${response.statusText}`);
-        return [];
+        const errorText = await response.text();
+        console.error(`Failed to fetch public presales: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();

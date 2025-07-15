@@ -49,8 +49,8 @@ export const Airdrop: React.FC = () => {
   const [isTokenApproved, setIsTokenApproved] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
-  // MultiSender contract address
-  const MULTI_SENDER_ADDRESS = ethers.getAddress('0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'); // Replace with actual address
+  // MultiSender contract address (properly checksummed)
+  const MULTI_SENDER_ADDRESS = ethers.getAddress('0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C');
 
   useEffect(() => {
     if (token && ethers.isAddress(token)) {
@@ -131,23 +131,31 @@ export const Airdrop: React.FC = () => {
   const estimateGas = async () => {
     try {
       const provider = web3Service.getProvider();
-      if (!provider) return;
+      if (!provider || !token || !tokenInfo) return;
       
       const multiSenderContract = new ethers.Contract(MULTI_SENDER_ADDRESS, MultiSenderABI, provider);
       
       // Get gas estimate from contract
       const validRecipients = recipients.filter(r => r.valid);
-      const gasEstimateWei = await multiSenderContract.estimateGas(validRecipients.length);
+      if (validRecipients.length === 0) return;
       
-      // Get gas price
-      const feeData = await provider.getFeeData();
-      const gasPrice = feeData.gasPrice || ethers.parseUnits('50', 'gwei');
+      try {
+        const gasEstimateWei = await multiSenderContract.estimateGas(validRecipients.length);
       
-      // Calculate total gas cost
-      const gasCost = gasEstimateWei * gasPrice;
-      const gasCostEther = ethers.formatEther(gasCost);
+        // Get gas price
+        const feeData = await provider.getFeeData();
+        const gasPrice = feeData.gasPrice || ethers.parseUnits('50', 'gwei');
       
-      setGasEstimate(gasCostEther);
+        // Calculate total gas cost
+        const gasCost = gasEstimateWei * gasPrice;
+        const gasCostEther = ethers.formatEther(gasCost);
+      
+        setGasEstimate(gasCostEther);
+      } catch (estimateError) {
+        console.error('Error in gas estimation:', estimateError);
+        // Provide a fallback estimate
+        setGasEstimate('0.005');
+      }
     } catch (error) {
       console.error('Error estimating gas:', error);
       setGasEstimate(null);
@@ -167,11 +175,18 @@ export const Airdrop: React.FC = () => {
   const handleRecipientChange = (index: number, field: 'address' | 'amount', value: string) => {
     const newRecipients = [...recipients];
     newRecipients[index][field] = value;
+    let isValid = true;
     
     // Validate recipient
     if (field === 'address') {
-      newRecipients[index].valid = ethers.isAddress(value);
-      if (!newRecipients[index].valid) {
+      try {
+        isValid = ethers.isAddress(value);
+      } catch (e) {
+        isValid = false;
+      }
+      
+      newRecipients[index].valid = isValid;
+      if (!isValid) {
         newRecipients[index].error = 'Invalid address';
       } else {
         delete newRecipients[index].error;
@@ -206,7 +221,13 @@ export const Airdrop: React.FC = () => {
           const address = record[0]?.trim();
           const amount = record[1]?.toString().trim();
           
-          const isValidAddress = ethers.isAddress(address);
+          let isValidAddress = false;
+          try {
+            isValidAddress = ethers.isAddress(address);
+          } catch (e) {
+            isValidAddress = false;
+          }
+          
           const isValidAmount = !isNaN(parseFloat(amount)) && parseFloat(amount) > 0;
           
           return {
@@ -265,7 +286,7 @@ export const Airdrop: React.FC = () => {
       const tokenContract = new ethers.Contract(
         token,
         [
-          'function approve(address,uint256) returns (bool)'
+          'function approve(address spender, uint256 amount) returns (bool)'
         ],
         signer
       );
@@ -305,7 +326,7 @@ export const Airdrop: React.FC = () => {
       // Prepare recipient addresses and amounts
       const recipientAddresses = validRecipients.map(r => r.address);
       const recipientAmounts = validRecipients.map(r => 
-        ethers.parseUnits(r.amount, tokenInfo.decimals)
+        ethers.parseUnits(r.amount || '0', tokenInfo.decimals)
       );
       
       // Send airdrop

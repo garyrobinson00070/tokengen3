@@ -34,12 +34,28 @@ export const useWallet = () => {
   const connectWallet = async () => {
     try {
       setIsConnecting(true);
-      setWallet(prev => ({...prev, error: null}));
+      setWallet(prev => ({ ...prev, error: null }));
       
       // Use web3Service to connect
       const address = await web3Service.connect();
       if (!address) {
         throw new Error('Failed to connect wallet');
+      }
+      
+      // Update wallet state
+      const provider = web3Service.getProvider();
+      if (provider) {
+        const network = await provider.getNetwork();
+        const balance = await provider.getBalance(address);
+        const formattedBalance = parseFloat(formatEther(balance)).toFixed(4);
+        
+        setWallet({
+          isConnected: true,
+          address: address,
+          balance: formattedBalance,
+          chainId: Number(network.chainId),
+          error: null
+        });
       }
       
       // Store wallet info in localStorage for persistence
@@ -113,6 +129,14 @@ export const useWallet = () => {
   // Sync wallet state with web3Service
   const syncWalletState = async () => {
     try {
+      // Check if we have a stored wallet address
+      const storedAddress = localStorage.getItem('walletAddress');
+      if (!storedAddress && wallet.isConnected) {
+        // If we don't have a stored address but wallet shows connected, disconnect
+        disconnectWallet();
+        return;
+      }
+      
       const provider = web3Service.getProvider();
       const signer = web3Service.getSigner();
       
@@ -151,21 +175,17 @@ export const useWallet = () => {
   useEffect(() => {
     if (typeof window.ethereum !== 'undefined') {
       // Check if we have a stored wallet address and try to reconnect
-      const attemptReconnect = async () => {
-        const storedAddress = localStorage.getItem('walletAddress');
-        if (storedAddress && !wallet.isConnected && !isConnecting) {
-          try {
-            await web3Service.connect();
-          } catch (err) {
-            console.error('Auto-reconnect failed:', err);
-            // Clear stored address if reconnect fails
-            localStorage.removeItem('walletAddress');
-          }
+      const storedAddress = localStorage.getItem('walletAddress');
+      if (storedAddress && !wallet.isConnected && !isConnecting) {
+        try {
+          connectWallet();
+        } catch (err) {
+          console.error('Auto-reconnect failed:', err);
+          // Clear stored address if reconnect fails
+          localStorage.removeItem('walletAddress');
         }
       }
-      
-      attemptReconnect();
-      
+            
       // Initial sync
       syncWalletState();
       

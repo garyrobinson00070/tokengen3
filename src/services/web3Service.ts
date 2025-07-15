@@ -15,6 +15,12 @@ export class Web3Service {
     }
 
     try {
+      // Check if already connected
+      if (this.provider && this.signer) {
+        const address = await this.signer.getAddress();
+        return address;
+      }
+      
       // Remove any existing listeners
       this.removeAllListeners();
       
@@ -22,7 +28,11 @@ export class Web3Service {
       this.provider = new ethers.BrowserProvider(window.ethereum, 'any');
       
       // Request accounts
-      await this.provider.send('eth_requestAccounts', []);
+      const accounts = await this.provider.send('eth_requestAccounts', []);
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No accounts found');
+      }
+      
       this.signer = await this.provider.getSigner();
       
       // Get network information
@@ -252,7 +262,7 @@ export class Web3Service {
   private getNetworkName(chainId: number): string {
     const networks: Record<number, string> = {
       1: 'Ethereum',
-      5: 'Goerli',
+      5: 'Goerli Testnet',
       56: 'Binance Smart Chain',
       97: 'BSC Testnet',
       137: 'Polygon',
@@ -349,8 +359,31 @@ export class Web3Service {
     if (!this.provider) throw new AppError('Provider not connected', ErrorType.WALLET);
     
     try {
-      const gasEstimate = await this.provider.estimateGas(transaction);
-      const gasPrice = await this.provider.getFeeData();
+      // Add safety checks
+      if (!transaction) {
+        throw new Error('Invalid transaction object');
+      }
+      
+      let gasEstimate;
+      try {
+        gasEstimate = await this.provider.estimateGas(transaction);
+      } catch (estimateError) {
+        console.error('Gas estimation failed:', estimateError);
+        // Provide a fallback estimate
+        gasEstimate = BigInt(3000000);
+      }
+      
+      let gasPrice;
+      try {
+        gasPrice = await this.provider.getFeeData();
+      } catch (priceError) {
+        console.error('Gas price fetch failed:', priceError);
+        // Provide fallback gas price
+        gasPrice = { 
+          maxFeePerGas: ethers.parseUnits('50', 'gwei'),
+          gasPrice: ethers.parseUnits('50', 'gwei')
+        };
+      }
       
       // Use maxFeePerGas if available (EIP-1559), otherwise use gasPrice
       const effectiveGasPrice = gasPrice.maxFeePerGas || gasPrice.gasPrice || 0n;
