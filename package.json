@@ -20,7 +20,6 @@
     "@metamask/providers": "^14.0.2",
     "@openzeppelin/contracts": "^4.8.0",
     "buffer": "^6.0.3",
-    "buffer": "^6.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "ethers": "^6.15.0",
