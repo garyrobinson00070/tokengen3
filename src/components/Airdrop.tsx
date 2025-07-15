@@ -48,9 +48,9 @@ export const Airdrop: React.FC = () => {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isTokenApproved, setIsTokenApproved] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-  
-  // MultiSender contract address
-  const MULTI_SENDER_ADDRESS = '0x742d35cc6634c0532925a3b8d4c9db96590c6c8c';
+
+  // MultiSender contract address - using lowercase to avoid checksum errors
+  const MULTI_SENDER_ADDRESS = '0x742d35cc6634c0532925a3b8d4c9db96590c6c8c'.toLowerCase();
 
   useEffect(() => {
     if (token && ethers.isAddress(token)) {
@@ -105,12 +105,33 @@ export const Airdrop: React.FC = () => {
       
       // Check if token is approved
       setIsTokenApproved(allowance > 0n);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading token info:', error);
-      setError('Failed to load token information. Please check the token address.');
+      setError(error.message || 'Failed to load token information. Please check the token address.');
       setTokenInfo(null);
     } finally {
       setIsValidating(false);
+    }
+  };
+
+  // Helper function to safely get checksummed address
+  const getChecksummedAddress = (address: string): string => {
+    try {
+      return ethers.getAddress(address);
+    } catch (error) {
+      console.error('Invalid address format:', address, error);
+      return address;
+    }
+  };
+
+  // Helper function to safely create contract instance
+  const createTokenContract = (tokenAddress: string, abi: any[], provider: any) => {
+    try {
+      const checksummedAddress = getChecksummedAddress(tokenAddress);
+      return new ethers.Contract(checksummedAddress, abi, provider);
+    } catch (error) {
+      console.error('Error loading token info:', error);
+      throw new Error('Invalid token address format');
     }
   };
 
@@ -133,17 +154,17 @@ export const Airdrop: React.FC = () => {
       const provider = web3Service.getProvider();
       if (!provider || !token || !tokenInfo) return;
       
-      const multiSenderContract = new ethers.Contract(
-        ethers.getAddress(MULTI_SENDER_ADDRESS), 
-        MultiSenderABI, 
-        provider
-      );
-      
-      // Get gas estimate from contract
-      const validRecipients = recipients.filter(r => r.valid);
-      if (validRecipients.length === 0) return;
-      
       try {
+        const multiSenderContract = new ethers.Contract(
+          getChecksummedAddress(MULTI_SENDER_ADDRESS), 
+          MultiSenderABI, 
+          provider
+        );
+      
+        // Get gas estimate from contract
+        const validRecipients = recipients.filter(r => r.valid);
+        if (validRecipients.length === 0) return;
+      
         const gasEstimateWei = await multiSenderContract.estimateGas(validRecipients.length);
       
         // Get gas price
@@ -280,24 +301,30 @@ export const Airdrop: React.FC = () => {
       const signer = web3Service.getSigner();
       if (!signer) throw new Error('Wallet connection issue');
       
-      // Calculate total amount to approve (with some buffer)
-      const totalAmountWei = ethers.parseUnits(
-        (parseFloat(totalAmount) * 1.1).toString(), // 10% buffer
-        tokenInfo.decimals
-      );
-      
-      // Approve token spending
-      const tokenContract = new ethers.Contract(
-        token,
-        ['function approve(address spender, uint256 amount) returns (bool)'],
-        signer
-      );
-      
-      const approveTx = await tokenContract.approve(ethers.getAddress(MULTI_SENDER_ADDRESS), totalAmountWei);
-      await approveTx.wait();
-      
-      setIsTokenApproved(true);
-      setSuccess('Token approved for airdrop!');
+      try {
+        // Calculate total amount to approve (with some buffer)
+        const totalAmountWei = ethers.parseUnits(
+          (parseFloat(totalAmount) * 1.1).toString(), // 10% buffer
+          tokenInfo.decimals
+        );
+        
+        // Approve token spending
+        const tokenContract = createTokenContract(
+          token,
+          ['function approve(address spender, uint256 amount) returns (bool)'],
+          signer
+        );
+        
+        const approveTx = await tokenContract.approve(getChecksummedAddress(MULTI_SENDER_ADDRESS), totalAmountWei);
+        await approveTx.wait();
+        
+        setIsTokenApproved(true);
+        setSuccess('Token approved for airdrop!');
+      } catch (error: any) {
+        console.error('Error approving token:', error);
+        setError(error.message || 'Failed to approve token');
+        throw error;
+      }
     } catch (error) {
       console.error('Error approving token:', error);
       setError((error as Error).message || 'Failed to approve token');
@@ -325,29 +352,35 @@ export const Airdrop: React.FC = () => {
       const signer = web3Service.getSigner();
       if (!signer) throw new Error('Wallet connection issue');
       
-      // Prepare recipient addresses and amounts
-      const recipientAddresses = validRecipients.map(r => r.address);
-      const recipientAmounts = validRecipients.map(r => 
-        ethers.parseUnits(r.amount || '0', tokenInfo.decimals)
-      );
-      
-      // Send airdrop
-      const multiSenderContract = new ethers.Contract(
-        ethers.getAddress(MULTI_SENDER_ADDRESS), 
-        MultiSenderABI, 
-        signer
-      );
-      
-      const tx = await multiSenderContract.multiSend(
-        token,
-        recipientAddresses,
-        recipientAmounts
-      );
-      
-      const receipt = await tx.wait();
-      
-      setTxHash(tx.hash);
-      setSuccess(`Airdrop sent successfully to ${validRecipients.length} recipients!`);
+      try {
+        // Prepare recipient addresses and amounts
+        const recipientAddresses = validRecipients.map(r => getChecksummedAddress(r.address));
+        const recipientAmounts = validRecipients.map(r => 
+          ethers.parseUnits(r.amount || '0', tokenInfo.decimals)
+        );
+        
+        // Send airdrop
+        const multiSenderContract = new ethers.Contract(
+          getChecksummedAddress(MULTI_SENDER_ADDRESS), 
+          MultiSenderABI, 
+          signer
+        );
+        
+        const tx = await multiSenderContract.multiSend(
+          getChecksummedAddress(token),
+          recipientAddresses,
+          recipientAmounts
+        );
+        
+        const receipt = await tx.wait();
+        
+        setTxHash(tx.hash);
+        setSuccess(`Airdrop sent successfully to ${validRecipients.length} recipients!`);
+      } catch (error: any) {
+        console.error('Error sending airdrop:', error);
+        setError(error.message || 'Failed to send airdrop');
+        throw error;
+      }
     } catch (error) {
       console.error('Error sending airdrop:', error);
       setError((error as Error).message || 'Failed to send airdrop');
