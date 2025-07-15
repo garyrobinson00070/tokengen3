@@ -58,8 +58,19 @@ export const LiquidityLock: React.FC = () => {
       
       const lockerContract = new ethers.Contract(LOCKER_ADDRESS, LiquidityLockerABI, provider);
       
-      // Get user's lock IDs
-      const lockIds = await lockerContract.getUserLocks(address);
+      // Get user's lock IDs with error handling for empty contract response
+      let lockIds;
+      try {
+        lockIds = await lockerContract.getUserLocks(address);
+      } catch (error: any) {
+        // Handle BAD_DATA error when contract returns empty data (0x)
+        if (error.code === 'BAD_DATA' && error.value === '0x') {
+          console.warn('Contract returned empty data - treating as no locks found');
+          setLocks([]);
+          return;
+        }
+        throw error;
+      }
       
       // Get lock details for each ID
       const lockPromises = lockIds.map(async (id: any) => {
