@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/export-contracts.js && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "jest",
@@ -14,7 +14,8 @@
     "server": "node server/index.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
     "start": "node server/index.js",
-    "build:all": "npm run build && npm run server"
+    "build:all": "npm run build && npm run server",
+    "export-contracts": "node scripts/export-contracts.js"
   },
   "dependencies": {
     "@metamask/providers": "^14.0.2",
