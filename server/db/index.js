@@ -1,52 +1,45 @@
-const { Pool } = require('pg');
+// server/db/index.js
+const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
-// Create a connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+const pool = mysql.createPool({
+  uri: process.env.DATABASE_URL,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  // If using individual params:
+  // host: process.env.DB_HOST,
+  // user: process.env.DB_USER,
+  // password: process.env.DB_PASSWORD,
+  // database: process.env.DB_NAME,
+  // port: process.env.DB_PORT,
+  // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
 });
 
-// Connect to PostgreSQL
 const connectDB = async () => {
   try {
-    // Add connection timeout
-    const connectionTimeoutMs = 30000; // 30 seconds
-    const connectionPromise = pool.connect();
-    
-    // Create a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(`Connection timed out after ${connectionTimeoutMs}ms`));
-      }, connectionTimeoutMs);
-    });
-    
-    // Test connection
-    const client = await Promise.race([connectionPromise, timeoutPromise]);
-    console.log(`PostgreSQL Connected: ${client.database} on ${client.host}`);
-    client.release();
-    
-    // Initialize database if needed
+    const connection = await pool.getConnection();
+    console.log(`MySQL Connected: ${connection.config.database} on ${connection.config.host}`);
+    connection.release();
+
     await initializeDatabase();
-    
-    // Set up connection health check
+
     if (process.env.NODE_ENV === 'production') {
       setInterval(async () => {
         try {
-          const healthCheckClient = await pool.connect();
-          await healthCheckClient.query('SELECT 1');
-          healthCheckClient.release();
+          const healthCheckConn = await pool.getConnection();
+          await healthCheckConn.query('SELECT 1');
+          healthCheckConn.release();
         } catch (error) {
           console.error('Database health check failed:', error.message);
-          // In production, this would trigger an alert or restart mechanism
         }
-      }, 60000); // Check every minute
+      }, 60000);
     }
-    
+
     return pool;
   } catch (error) {
-    console.error(`Error connecting to PostgreSQL: ${error.message}`);
+    console.error(`Error connecting to MySQL: ${error.message}`);
     // Retry logic with exponential backoff
     const retryDelay = Math.min(30000, Math.pow(2, retryCount) * 1000);
     console.log(`Retrying connection in ${retryDelay/1000} seconds...`);
@@ -54,53 +47,44 @@ const connectDB = async () => {
   }
 };
 
-// Track retry attempts
 let retryCount = 0;
 
-// Initialize database tables if they don't exist
 const initializeDatabase = async () => {
   try {
-    const client = await pool.connect();
-    
-    // Read schema file
+    const connection = await pool.getConnection();
     const schemaPath = path.join(__dirname, 'schema.sql');
     if (fs.existsSync(schemaPath)) {
       const schema = fs.readFileSync(schemaPath, 'utf8');
-      await client.query(schema);
+      // Split on semicolons to avoid multi-statement issues
+      const statements = schema.split(';').map(s => s.trim()).filter(Boolean);
+      for (const stmt of statements) {
+        await connection.query(stmt);
+      }
       console.log('Database schema initialized');
     }
-    
-    client.release();
+    connection.release();
   } catch (error) {
     console.error(`Error initializing database: ${error.message}`);
     throw error;
   }
 };
 
-// Query helper with error handling
-const query = async (text, params) => {
+const query = async (sql, params) => {
   const start = Date.now();
-  let client;
+  let connection;
   try {
-    // Get client from pool
-    client = await pool.connect();
-    
-    // Execute query
-    const res = await client.query(text, params);
-    
-    // Log query performance in development
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(sql, params);
     const duration = Date.now() - start;
     if (process.env.NODE_ENV === 'development') {
-      console.log('Executed query', { text, duration, rows: res.rowCount });
+      console.log('Executed query', { sql, duration, rows: Array.isArray(rows) ? rows.length : 0 });
     }
-    
-    return res;
+    return { rows };
   } catch (error) {
-    console.error('Query error', { text, error });
+    console.error('Query error', { sql, error });
     throw error;
   } finally {
-    // Release client back to pool
-    if (client) client.release();
+    if (connection) connection.release();
   }
 };
 
