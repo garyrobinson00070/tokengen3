@@ -1,3 +1,4 @@
+// server/utils/tokenVerification.js
 const { query } = require('../db');
 const { ethers } = require('ethers');
 
@@ -11,16 +12,16 @@ async function verifyTokenOwnership(tokenAddress, walletAddress) {
   try {
     // Check if token exists in our database
     const tokenResult = await query(
-      'SELECT * FROM tokens WHERE contract_address = $1',
+      'SELECT * FROM tokens WHERE contract_address = ?',
       [tokenAddress.toLowerCase()]
     );
-    
+
     if (tokenResult.rows.length === 0) {
       return false;
     }
-    
+
     const token = tokenResult.rows[0];
-    
+
     // Check if wallet is the token owner
     if (token.owner_address.toLowerCase() !== walletAddress.toLowerCase()) {
       // If not in database, verify on-chain
@@ -31,7 +32,7 @@ async function verifyTokenOwnership(tokenAddress, walletAddress) {
           ['function owner() view returns (address)'],
           provider
         );
-        
+
         const onChainOwner = await tokenContract.owner();
         return onChainOwner.toLowerCase() === walletAddress.toLowerCase();
       } catch (error) {
@@ -39,7 +40,7 @@ async function verifyTokenOwnership(tokenAddress, walletAddress) {
         return false;
       }
     }
-    
+
     return true;
   } catch (error) {
     console.error('Error verifying token ownership:', error);
@@ -61,7 +62,7 @@ async function isTokenHolder(tokenAddress, walletAddress) {
       ['function balanceOf(address) view returns (uint256)'],
       provider
     );
-    
+
     const balance = await tokenContract.balanceOf(walletAddress);
     return balance > 0;
   } catch (error) {
