@@ -43,7 +43,7 @@ router.post('/token', authenticate, validateTokenConfig, async (req, res) => {
     if (!network.includes('testnet') && !network.includes('goerli') && !network.includes('sepolia')) {
       try {
         const userResult = await query(
-          'SELECT esr_balance FROM users WHERE address = $1',
+          'SELECT esr_balance FROM users WHERE address = ?',
           [userId]
         );
         
@@ -116,7 +116,7 @@ router.post('/token', authenticate, validateTokenConfig, async (req, res) => {
             `INSERT INTO tokens 
             (contract_address, contract_type, name, symbol, decimals, initial_supply, max_supply, 
              owner_address, network_id, network_name, network_chain_id, transaction_hash, verified, features) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               result.contractAddress.toLowerCase(),
               contractType,
@@ -223,7 +223,7 @@ router.post('/presale', authenticate, validatePresaleConfig, async (req, res) =>
     if (!network.includes('testnet') && !network.includes('goerli') && !network.includes('sepolia')) {
       try {
         const userResult = await query(
-          'SELECT esr_balance FROM users WHERE address = $1',
+          'SELECT esr_balance FROM users WHERE address = ?',
           [userId]
         );
         
@@ -297,7 +297,7 @@ router.post('/presale', authenticate, validatePresaleConfig, async (req, res) =>
             (contract_address, token_address, owner_address, sale_type, token_info, 
              sale_configuration, vesting_config, wallet_setup, network_id, network_name, 
              network_chain_id, transaction_hash, verified) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               result.contractAddress.toLowerCase(),
               presaleConfig.tokenInfo.tokenAddress.toLowerCase(),
@@ -370,7 +370,7 @@ router.post('/governance', authenticate, async (req, res) => {
     if (!network.includes('testnet') && !network.includes('goerli') && !network.includes('sepolia')) {
       try {
         const userResult = await query(
-          'SELECT esr_balance FROM users WHERE address = $1',
+          'SELECT esr_balance FROM users WHERE address = ?',
           [userId]
         );
         
@@ -441,7 +441,7 @@ router.post('/governance', authenticate, async (req, res) => {
             `INSERT INTO governance_contracts 
             (contract_address, token_address, owner_address, network_id, network_name, 
              network_chain_id, transaction_hash, verified) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               result.contractAddress.toLowerCase(),
               tokenAddress.toLowerCase(),
@@ -525,7 +525,7 @@ router.get('/status/:txHash', authenticate, async (req, res) => {
       // Update transaction status in database
       try {
         await query(
-          'UPDATE transactions SET status = $1, gas_used = $2, block_number = $3 WHERE transaction_hash = $4',
+          'UPDATE transactions SET status = ?, gas_used = ?, block_number = ? WHERE transaction_hash = ?',
           [
             receipt.status === 1 ? 'confirmed' : 'failed',
             receipt.gasUsed.toString(),
